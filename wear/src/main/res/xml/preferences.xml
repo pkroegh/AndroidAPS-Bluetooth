@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="vibrateOnBolus"
+        android:title="Vibrate on Bolus"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="units_mgdl"
+        android:title="Units for Actions"
+        android:summaryOn="mg/dl"
+        android:summaryOff="mmol/l"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="show_date"
+        android:title="Show Date"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_iob"
+        android:title="Show IOB"
+        android:summary="Show insulin on board."
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_cob"
+        android:title="Show COB"
+        android:summary="Show carb on board."
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showDelta"
+        android:summary="Show delta. (Circle WF)"
+        android:title="Show Delta"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showAvgDelta"
+        android:summary="Show the avgDelta."
+        android:title="Show AvgDelta"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_uploader_battery"
+        android:title="Show Phone Battery"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="show_rig_battery"
+        android:title="Show Rig Battery"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_temp_basal"
+        android:title="Show Basal Rate"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showExternalStatus"
+        android:title="Show Loop Status"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showBG"
+        android:summary="Show BG. (Circle WF)"
+        android:title="Show BG"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_direction"
+        android:summary="Show direction arrow"
+        android:title="Show Direction Arrow"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showAgo"
+        android:summary="Minutes since last reading. (Circle WF)"
+        android:title="Show Ago"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="dark"
+        android:summary="Dark theme"
+        android:title="Dark"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="highlight_basals"
+        android:summary="Better visible basal rate and temp basals"
+        android:title="Highlight Basals"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <ListPreference
+        android:defaultValue="3"
+        android:entries="@array/chart_timeframe"
+        android:entryValues="@array/chart_timeframe_values"
+        android:key="chart_timeframe"
+        android:summary="Chart Timeframe"
+        android:title="Chart Timeframe" />
+
+    <ListPreference
+        android:defaultValue="1"
+        android:entries="@array/input_design"
+        android:entryValues="@array/input_design_values"
+        android:key="input_design"
+        android:summary="Input Design"
+        android:title="Input Design" />
+
+    <ListPreference
+        android:defaultValue="2"
+        android:entries="@array/delta_granularity"
+        android:entryValues="@array/delta_granularity_values"
+        android:key="delta_granularity"
+        android:summary="Delta Granularity (Steampunk)"
+        android:title="Delta Granularity (Steampunk)" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="showBigNumbers"
+        android:summary="Big numbers. (Circle WF)"
+        android:title="Big Numbers"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="showRingHistory"
+        android:summary="Graphical history. (Circle WF)"
+        android:title="Ring History"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="softRingHistory"
+        android:summary="Less eyecandy. (Circle WF)"
+        android:title="Light Ring History"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="animation"
+        android:summary="Animations. (Circle WF)"
+        android:title="Animations"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showWizard"
+        android:summary="Wizard from watch possible"
+        android:title="Wizard in Menu"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="primefill"
+        android:summary="Prime/Fill from watch possible"
+        android:title="Prime in Menu"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="singletarget"
+        android:summary="Single temp-target instead of a range."
+        android:title="Single Target"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="wizardpercentage"
+        android:summary="Percentage correction."
+        android:title="Wizard Percentage"
+        app:wear_iconOff="@drawable/settings_off"
+        app:wear_iconOn="@drawable/settings_on"/>
+    <info.nightscout.androidaps.interaction.utils.VersionPreference
+        android:defaultValue="1"
+        android:entries="@array/input_design"
+        android:entryValues="@array/input_design_values"
+        android:key="version_number"
+        android:summary="Input Design"
+        android:title="Version:" />
+</PreferenceScreen>

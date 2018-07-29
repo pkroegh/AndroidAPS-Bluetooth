@@ -1,0 +1,111 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="info.nightscout.androidaps.plugins.Actions.ActionsFragment">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_profileswitch"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_profileswitch"
+                android:text="@string/careportal_profileswitch" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_temptarget"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_temptarget"
+                android:text="@string/careportal_temporarytarget" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_settempbasal"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_starttempbasal"
+                android:text="@string/overview_tempbasal_button" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_canceltempbasal"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_cancelbasal"
+                android:text="Cancel temp basal" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_extendedbolus"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_startextbolus"
+                android:text="@string/overview_extendedbolus_button" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_extendedbolus_cancel"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_cancelextbolus"
+                android:text="@string/overview_extendedbolus_cancel_button" />
+
+            <info.nightscout.utils.SingleClickButton
+                android:id="@+id/actions_fill"
+                style="?android:attr/buttonStyle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="0.5"
+                android:drawableTop="@drawable/icon_actions_refill"
+                android:text="@string/primefill" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>

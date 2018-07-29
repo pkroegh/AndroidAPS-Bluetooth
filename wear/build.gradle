@@ -1,0 +1,72 @@
+apply plugin: 'com.android.application'
+
+ext {
+    supportLibraryVersion = "23.0.1"
+    wearableVersion = "2.0.1"    
+}
+
+def generateGitBuild = { ->
+
+    StringBuilder stringBuilder = new StringBuilder();
+    stringBuilder.append('"')
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--always'
+            standardOutput = stdout
+        }
+        String commitObject = stdout.toString().trim()
+        stringBuilder.append(commitObject)
+    } catch (ignored) {
+        stringBuilder.append('NoGitSystemAvailable')
+    }
+    stringBuilder.append('-')
+    stringBuilder.append((new Date()).format('yyyy.MM.dd'))
+    stringBuilder.append('"')
+    return stringBuilder.toString()
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "26.0.2"
+
+    defaultConfig {
+        applicationId "info.nightscout.androidaps"
+        minSdkVersion 20
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0.2"
+        buildConfigField "String", "BUILDVERSION", generateGitBuild()
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    publishNonDefault true
+
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        flatDir {
+            dirs 'libs'
+        }
+    }
+}
+
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile files("libs/hellocharts-library-1.5.5.jar")
+    //compile "com.ustwo.android:clockwise-wearable:1.0.2"
+    provided "com.google.android.wearable:wearable:${wearableVersion}"
+    compile "com.google.android.support:wearable:${wearableVersion}"
+    compile "com.google.android.gms:play-services-wearable:7.3.0"
+    compile(name:"ustwo-clockwise-debug", ext:"aar")
+    compile "com.android.support:support-v4:23.0.1"
+    compile "me.denley.wearpreferenceactivity:wearpreferenceactivity:0.5.0"
+}
