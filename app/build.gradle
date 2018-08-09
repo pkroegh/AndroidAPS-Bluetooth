@@ -12,7 +12,12 @@ buildscript {
 apply plugin: "com.android.application"
 apply plugin: "io.fabric"
 apply plugin: "jacoco-android"
-apply plugin: 'com.jakewharton.butterknife'
+// Fixes error when updating to new gradle
+// apply plugin: 'com.jakewharton.butterknife'
+dependencies {
+    implementation 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+}
 
 ext {
     supportLibraryVersion = "27.0.2"
@@ -28,7 +33,7 @@ repositories {
 
 def generateGitBuild = { ->
 
-    StringBuilder stringBuilder = new StringBuilder();
+    StringBuilder stringBuilder = new StringBuilder()
     stringBuilder.append('"')
     try {
         def stdout = new ByteArrayOutputStream()
@@ -49,7 +54,7 @@ def generateGitBuild = { ->
 
 android {
     compileSdkVersion 27
-    buildToolsVersion "${supportLibraryVersion}"
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         applicationId "info.nightscout.androidaps"
@@ -175,10 +180,10 @@ dependencies {
 
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile("com.crashlytics.sdk.android:crashlytics:2.6.7@aar") {
-        transitive = true;
+        transitive = true
     }
     compile("com.crashlytics.sdk.android:answers:1.3.12@aar") {
-        transitive = true;
+        transitive = true
     }
 
     compile "com.android.support:appcompat-v7:${supportLibraryVersion}"

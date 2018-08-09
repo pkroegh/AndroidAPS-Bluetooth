@@ -63,6 +63,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".plugins.PumpDanaRS.activities.PairingHelperActivity" />
+        <activity android:name=".VirtualBluetoothActivity"></activity>
 
         <receiver
             android:name=".receivers.DataReceiver"
@@ -152,11 +153,16 @@
             android:name=".plugins.Overview.notifications.DismissNotificationService"
             android:exported="false" />
 
+        <!-- Bluetooth pump service -->
+        <service
+            android:name=".Services.BluetoothService"
+            android:enabled="true"
+            android:exported="false" />
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="59d462666c664c57b29e1d79ea123e01f8057cfa" />
 
-        <activity android:name=".ActivitySimbleBluetooth"></activity>
     </application>
 
 </manifest>

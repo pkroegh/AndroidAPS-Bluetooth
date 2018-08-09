@@ -5,14 +5,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.FragmentManager;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.crashlytics.android.Crashlytics;
@@ -21,21 +17,12 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import butterknife.Unbinder;
-
-
-
-
-import info.nightscout.androidaps.ActivitySimbleBluetooth;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.VirtualBluetoothActivity;
 import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
-import info.nightscout.androidaps.plugins.PumpDanaR.Dialogs.ProfileViewDialog;
-import info.nightscout.androidaps.plugins.PumpDanaR.activities.DanaRHistoryActivity;
-import info.nightscout.androidaps.plugins.PumpDanaR.activities.DanaRStatsActivity;
 import info.nightscout.androidaps.plugins.PumpVirtual.events.EventVirtualPumpUpdateGui;
 
 public class VirtualPumpFragment extends SubscriberFragment {
@@ -71,11 +58,11 @@ public class VirtualPumpFragment extends SubscriberFragment {
                              Bundle savedInstanceState) {
         try {
             View view = inflater.inflate(R.layout.virtualpump_fragment, container, false);
-            basaBasalRateView = (TextView) view.findViewById(R.id.virtualpump_basabasalrate);
-            tempBasalView = (TextView) view.findViewById(R.id.virtualpump_tempbasal);
-            extendedBolusView = (TextView) view.findViewById(R.id.virtualpump_extendedbolus);
-            batteryView = (TextView) view.findViewById(R.id.virtualpump_battery);
-            reservoirView = (TextView) view.findViewById(R.id.virtualpump_reservoir);
+            basaBasalRateView = view.findViewById(R.id.virtualpump_basabasalrate);
+            tempBasalView = view.findViewById(R.id.virtualpump_tempbasal);
+            extendedBolusView = view.findViewById(R.id.virtualpump_extendedbolus);
+            batteryView = view.findViewById(R.id.virtualpump_battery);
+            reservoirView = view.findViewById(R.id.virtualpump_reservoir);
 
             /**pkt har indsat dette
              */
@@ -98,7 +85,7 @@ public class VirtualPumpFragment extends SubscriberFragment {
     */
 
     @OnClick(R.id.virtualpump_simpleble) void onSimpleBleClick() {
-        startActivity(new Intent(getContext(), ActivitySimbleBluetooth.class));
+        startActivity(new Intent(getContext(), VirtualBluetoothActivity.class));
     }
 
     @Override
@@ -120,8 +107,8 @@ public class VirtualPumpFragment extends SubscriberFragment {
                     } else {
                         extendedBolusView.setText("");
                     }
-                    batteryView.setText(virtualPump.batteryPercent + "%");
-                    reservoirView.setText(virtualPump.reservoirInUnits + "U");
+                    batteryView.setText(VirtualPumpPlugin.batteryPercent + "%");
+                    reservoirView.setText(VirtualPumpPlugin.reservoirInUnits + "U");
                 }
             });
     }
