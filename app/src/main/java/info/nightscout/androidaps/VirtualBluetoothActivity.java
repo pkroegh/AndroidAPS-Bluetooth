@@ -25,7 +25,7 @@ import info.nightscout.androidaps.Services.BluetoothService;
 import info.nightscout.androidaps.Services.BluetoothService.MyBinder;
 
 public class VirtualBluetoothActivity extends AppCompatActivity {
-    //Debug tag
+    //Debug tag - Used in log
     private static final String TAG = "BluetoothActivity";
 
     public TextView mBluetoothStatus;
