@@ -23,6 +23,8 @@ public class Config {
 
     public static final boolean SMSCOMMUNICATORENABLED = !BuildConfig.NSCLIENTOLNY && !BuildConfig.G5UPLOADER;
 
+    //Bluetooth pump
+    public static final boolean BLUETOOTHPUMP = !BuildConfig.NSCLIENTOLNY && !BuildConfig.G5UPLOADER;
 
     public static final boolean detailedLog = true;
     public static final boolean logFunctionCalls = true;

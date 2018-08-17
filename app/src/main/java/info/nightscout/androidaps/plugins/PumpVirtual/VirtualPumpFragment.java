@@ -2,7 +2,6 @@ package info.nightscout.androidaps.plugins.PumpVirtual;
 
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -17,11 +16,8 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.VirtualBluetoothActivity;
 import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
 import info.nightscout.androidaps.plugins.PumpVirtual.events.EventVirtualPumpUpdateGui;
 
@@ -64,10 +60,6 @@ public class VirtualPumpFragment extends SubscriberFragment {
             batteryView = view.findViewById(R.id.virtualpump_battery);
             reservoirView = view.findViewById(R.id.virtualpump_reservoir);
 
-            /**pkt har indsat dette
-             */
-            unbinder = ButterKnife.bind(this, view);
-
             return view;
         } catch (Exception e) {
             Crashlytics.logException(e);
@@ -79,13 +71,6 @@ public class VirtualPumpFragment extends SubscriberFragment {
     @Subscribe
     public void onStatusEvent(final EventVirtualPumpUpdateGui ev) {
         updateGUI();
-    }
-
-    /**pkt har indsat dette
-    */
-
-    @OnClick(R.id.virtualpump_simpleble) void onSimpleBleClick() {
-        startActivity(new Intent(getContext(), VirtualBluetoothActivity.class));
     }
 
     @Override

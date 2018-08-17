@@ -25,7 +25,6 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.VirtualBluetoothActivity;
 import info.nightscout.androidaps.events.EventExtendedBolusChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
 import info.nightscout.androidaps.events.EventTempBasalChange;
@@ -33,6 +32,7 @@ import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.Dialogs.ProfileViewDialog;
 import info.nightscout.androidaps.plugins.PumpDanaR.activities.DanaRHistoryActivity;
+import info.nightscout.androidaps.plugins.PumpDanaR.activities.DanaRStatsActivity;
 import info.nightscout.androidaps.plugins.PumpDanaR.events.EventDanaRNewStatus;
 import info.nightscout.androidaps.queue.events.EventQueueChanged;
 import info.nightscout.utils.DateUtil;
@@ -113,17 +113,9 @@ public class DanaRFragment extends SubscriberFragment {
     }
 
 
-
-
-    // pkt
     @OnClick(R.id.danar_stats) void onStatsClick() {
-        startActivity(new Intent(getContext(), VirtualBluetoothActivity.class));
-    }
-
-    // pkt
-   // @OnClick(R.id.danar_stats) void onStatsClick() {
-    //    startActivity(new Intent(getContext(), DanaRStatsActivity.class));
-   // }
+        startActivity(new Intent(getContext(), DanaRStatsActivity.class));
+     }
 
 
 

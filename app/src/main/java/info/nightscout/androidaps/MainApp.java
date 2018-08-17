@@ -50,6 +50,7 @@ import info.nightscout.androidaps.plugins.ProfileCircadianPercentage.CircadianPe
 import info.nightscout.androidaps.plugins.ProfileLocal.LocalProfilePlugin;
 import info.nightscout.androidaps.plugins.ProfileNS.NSProfilePlugin;
 import info.nightscout.androidaps.plugins.ProfileSimple.SimpleProfilePlugin;
+import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPumpPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaRKorean.DanaRKoreanPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaRS.DanaRSPlugin;
@@ -154,6 +155,9 @@ public class MainApp extends Application {
                 pluginsList.add(SourceDexcomG5Plugin.getPlugin());
             if (Config.SMSCOMMUNICATORENABLED) pluginsList.add(SmsCommunicatorPlugin.getPlugin());
             pluginsList.add(FoodPlugin.getPlugin());
+
+            //Bluetooth pump
+            if (Config.BLUETOOTHPUMP) pluginsList.add(BluetoothPumpPlugin.getPlugin());
 
             pluginsList.add(WearPlugin.initPlugin(this));
             pluginsList.add(StatuslinePlugin.initPlugin(this));

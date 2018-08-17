@@ -63,7 +63,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".plugins.PumpDanaRS.activities.PairingHelperActivity" />
-        <activity android:name=".VirtualBluetoothActivity"></activity>
 
         <receiver
             android:name=".receivers.DataReceiver"
@@ -155,8 +154,7 @@
 
         <!-- Bluetooth pump service -->
         <service
-            android:name=".Services.BluetoothService"
-            android:enabled="true"
+            android:name=".plugins.PumpBluetooth.services.BluetoothService"
             android:exported="false" />
 
         <meta-data
