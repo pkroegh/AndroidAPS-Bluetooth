@@ -872,7 +872,9 @@
     <string name="bluetoothstatus_discovering">Discovering&#8230;</string>
     <string name="bluetoothstatus_connecting">Connecting&#8230;</string>
     <string name="bluetoothstatus_failed">Connection failed</string>
-    <string name="bluetoothstatus_connected">Connected to:%s</string>
+    <string name="bluetoothstatus_connected">Connected to:</string>
+    <string name="bluetoothstatus_dropped">DC: Reconnecting&#8230;</string>
+    <string name="bluetoothstatus_disconnecting">Disconnecting&#8230;</string>
     <string name="bluetoothstatus_disconnected">Disconnected</string>
     <string name="bluetoothpump_serviceon">Service running</string>
     <string name="bluetoothpump_serviceoff">Service not running</string>
