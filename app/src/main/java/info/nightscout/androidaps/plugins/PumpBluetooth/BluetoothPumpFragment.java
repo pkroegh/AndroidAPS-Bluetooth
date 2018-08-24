@@ -44,32 +44,16 @@ import info.nightscout.androidaps.plugins.PumpVirtual.events.EventVirtualPumpUpd
 public class BluetoothPumpFragment extends SubscriberFragment {
     protected Logger log = LoggerFactory.getLogger(BluetoothPumpFragment.class);
 
+    private TextView vPumpName;
+    private TextView vBluetoothStatus;
+    private TextView vServiceStatus;
+    private TextView vCarbs;
+    private TextView tBaseBasalRate;
+    private TextView tTempBasal;
+    private TextView tPumpBattery;
+    private TextView tPumpReservoir;
 
-
-
-
-
-
-    private TextView basaBasalRateView;
-
-    private TextView mBluetoothStatus;
-    private TextView mServiceStatus;
-    private TextView mReadBuffer;
-    //private TextView mSetInsulin;
-    //private TextView mSetCarbs;
-
-    private TextView tempBasalView;
-
-    //Interaction with layout
-    public Button mServiceON;
-    public Button mServiceOFF;
-
-    private ListView mDevicesListView;
-
-    public Button mListPairedDevicesBtn;
-    public Button mDiscoverBtn;
-
-    public Button mWriteBtn;
+    private Button bReviveService;
 
     //Update GUI handler
     private static Handler sLoopHandler = new Handler();
@@ -93,32 +77,22 @@ public class BluetoothPumpFragment extends SubscriberFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bluetoothpump_fragment, container, false);
-
-        /*
-
         try{
-            //Connection between layout element and layout page
-            mServiceON = view.findViewById(R.id.start_service);
-            mServiceOFF = view.findViewById(R.id.stop_service);
+            //Connection between layout element and layout page (TextView elements)
+            vPumpName = view.findViewById(R.id.bluetoothpump_client);
+            vBluetoothStatus = view.findViewById(R.id.bluetoothpump_bluetoothstatus);
+            vServiceStatus = view.findViewById(R.id.bluetoothpump_servicestatus);
+            vCarbs = view.findViewById(R.id.bluetoothpump_carbs);
+            tBaseBasalRate = view.findViewById(R.id.bluetoothpump_basabasalrate);
+            tTempBasal = view.findViewById(R.id.bluetoothpump_tempbasal);
+            tPumpBattery = view.findViewById(R.id.bluetoothpump_battery);
+            tPumpReservoir = view.findViewById(R.id.bluetoothpump_reservoir);
 
-            mBluetoothStatus = view.findViewById(R.id.bluetoothStatus);
-            mServiceStatus = view.findViewById(R.id.serviceStatus);
-            mReadBuffer = view.findViewById(R.id.readBuffer);
-            //basaBasalRateView = view.findViewById(R.id.setInsulin);
-            //mSetCarbs = view.findViewById(R.id.setCarbs);
-
-            mDiscoverBtn = view.findViewById(R.id.discover);
-            mListPairedDevicesBtn = view.findViewById(R.id.PairedBtn);
-
-            mWriteBtn = view.findViewById(R.id.writeBtn);
-
-            mDevicesListView = view.findViewById(R.id.devicesListView);
-
-
-            tempBasalView = view.findViewById(R.id.bluetooth_tempbasal);
+            //Connection between layout element and layout page (Button elements)
+            bReviveService = view.findViewById(R.id.service_revive);
 
             //Click listeners
-            mServiceON.setOnClickListener(new View.OnClickListener() {
+            bReviveService.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
@@ -126,42 +100,12 @@ public class BluetoothPumpFragment extends SubscriberFragment {
                 }
             });
 
-            mDiscoverBtn.setOnClickListener(new View.OnClickListener(){
-                @Override
-                public void onClick(View v){
-                    BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
-                    bluetoothPump.setDiscovery();
-                }
-            });
-
-            mWriteBtn.setOnClickListener(new View.OnClickListener(){
-                @Override
-                public void onClick(View v){
-                    Context context = MainApp.instance().getApplicationContext();
-                    BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
-                    if(bluetoothPump.mServiceBound){
-                        if(bluetoothPump.sExecutionService.mConnectedThread != null){
-                            bluetoothPump.sExecutionService.mConnectedThread.write("Hello there!");
-                        } else {
-                            Toast.makeText(context, "Not connected to a device", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(context, "Service not bound", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-
             return view;
         } catch (Exception e) {
             Crashlytics.logException(e);
         }
-
-        */
-
         return null;
     }
-
-
 
     @Subscribe
     public void onStatusEvent(final EventPumpStatusChanged ev) {
@@ -182,6 +126,8 @@ public class BluetoothPumpFragment extends SubscriberFragment {
                 public void run() {
                     Log.d("BluetoothPumpFragment", "Updating Bluetooth GUI");
                     BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
+
+                    /*
                     if (bluetoothPump.mServiceStarted) {
                         if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
                             mDevicesListView.setAdapter(bluetoothPump.sExecutionService.mBTArrayAdapter); // assign model to view
@@ -217,6 +163,7 @@ public class BluetoothPumpFragment extends SubscriberFragment {
                             tempBasalView.setText("");
                         }
                     }
+                    */
                  }
             });
     }

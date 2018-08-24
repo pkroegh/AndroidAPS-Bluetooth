@@ -881,6 +881,7 @@
     <string name="bluetoothstatus_invalid">Bluetooth not available</string>
 
     <string name="bluetoothfragment_label">BLUETOOTH PUMP</string>
+    <string name="bluetoothfragment_client">Pump name</string>
     <string name="bluetoothfragment_bluetooth">Bluetooth status</string>
     <string name="bluetoothfragment_service">Service status</string>
     <string name="bluetoothfragment_carbs">Carbs to eat</string>

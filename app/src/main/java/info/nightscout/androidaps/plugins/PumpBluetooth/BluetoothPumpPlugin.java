@@ -185,15 +185,6 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
         }
     }
 
-    public void setDiscovery() {
-        if (mServiceStarted && mServiceBound) {
-            sExecutionService.discover();
-        } else {
-            reviveService();
-            sExecutionService.discover();
-        }
-    }
-
     public void setServiceText(String serviceText){
         mServiceStatus = serviceText;
         MainApp.bus().post(new EventBluetoothPumpUpdateGui());

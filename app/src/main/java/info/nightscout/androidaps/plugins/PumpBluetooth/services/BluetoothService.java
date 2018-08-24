@@ -62,6 +62,7 @@ import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPum
 
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
+import info.nightscout.androidaps.plugins.PumpDanaR.SerialIOThread;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusProgress;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStart;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStartWithSpeed;
@@ -511,6 +512,116 @@ public class BluetoothService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         return START_STICKY;
     }
+
+    public void connect() {
+
+        /*
+
+        if (mConnectionInProgress)
+            return;
+        new Thread() {
+            public void run() {
+                mConnectionInProgress = true;
+                boolean fail = false;
+                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+                try {
+                    mBTSocket = createBluetoothSocket(device);
+                } catch (IOException e) {
+                    fail = true;
+                    log.error("Socket creating failed");
+                }
+                try { // Establish the Bluetooth socket connection.
+                    mBTSocket.connect();
+                } catch (IOException e) {
+                    try {
+                        fail = true;
+                        mBTSocket.close();
+                    } catch (IOException e2) {
+                        //insert code to deal with this
+                        log.error("Socket creating failed");
+                    }
+                }
+                if (fail == false) {
+                    mConnectedThread = new ConnectedThread(mBTSocket);
+                    mConnectedThread.start();
+                    mConnectionInProgress = false;
+                } else {
+                    MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.FAILED));
+                    mConnectionInProgress = false;
+                }
+            }
+        }.start();
+*/
+
+/*
+        if (mDanaRPump.password != -1 && mDanaRPump.password != SP.getInt(R.string.key_danar_password, -1)) {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.wrongpumppassword), R.raw.error);
+            return;
+        }
+
+        if (mConnectionInProgress)
+            return;
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mConnectionInProgress = true;
+                getBTSocketForSelectedPump();
+                if (mRfcommSocket == null || mBTDevice == null) {
+                    mConnectionInProgress = false;
+                    return; // Device not found
+                }
+
+                try {
+                    mRfcommSocket.connect();
+                } catch (IOException e) {
+                    //log.error("Unhandled exception", e);
+                    if (e.getMessage().contains("socket closed")) {
+                        log.error("Unhandled exception", e);
+                    }
+                }
+
+                if (isConnected()) {
+                    if (mConnectedThread != null) {
+                        mSerialIOThread.disconnect("Recreate SerialIOThread");
+                    }
+                    mSerialIOThread = new SerialIOThread(mRfcommSocket);
+                    MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTED, 0));
+                }
+
+                mConnectionInProgress = false;
+            }
+        }).start();
+*/
+    }
+
+    /*
+    protected void getBTSocketForSelectedPump() {
+        mDevName = SP.getString(MainApp.sResources.getString(R.string.key_danar_bt_name), "");
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (bluetoothAdapter != null) {
+            Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
+
+            for (BluetoothDevice device : bondedDevices) {
+                if (mDevName.equals(device.getName())) {
+                    mBTDevice = device;
+                    try {
+                        mRfcommSocket = mBTDevice.createRfcommSocketToServiceRecord(SPP_UUID);
+                    } catch (IOException e) {
+                        log.error("Error creating socket: ", e);
+                    }
+                    break;
+                }
+            }
+        } else {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.nobtadapter));
+        }
+        if (mBTDevice == null) {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.devicenotfound));
+        }
+    }
+    */
 
     public boolean isConnected() {
         return mBTSocket != null && mBTSocket.isConnected();
