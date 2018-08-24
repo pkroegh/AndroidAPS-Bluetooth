@@ -866,16 +866,41 @@
     <!-- BluetoothPump strings -->
     <string name="bluetoothpump">Bluetooth pump</string>
     <string name="bluetoothpump_shortname">BPUMP</string>
+    <string name="bluetoothpump_settings">Bluetooth pump settings</string>
+    <string name="bluetooth_bt_name_title">DanaR Bluetooth device</string>
+    <string name="key_bluetooth_bt_name" translatable="false">danar_bt_name</string>
+    <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
+
+    <string name="bluetoothstatus_discovering">Discovering&#8230;</string>
+    <string name="bluetoothstatus_connecting">Connecting to:&#160;</string>
+    <string name="bluetoothstatus_connected">Connected to:&#160;</string>
+    <string name="bluetoothstatus_disconnecting">Disconnecting&#8230;</string>
+    <string name="bluetoothstatus_disconnected">Disconnected</string>
+    <string name="bluetoothstatus_failed">Connection failed</string>
+    <string name="bluetoothstatus_dropped">Reconnecting to:&#160;</string>
+    <string name="bluetoothstatus_invalid">Bluetooth not available</string>
+
+    <string name="bluetoothfragment_label">BLUETOOTH PUMP</string>
+    <string name="bluetoothfragment_bluetooth">Bluetooth status</string>
+    <string name="bluetoothfragment_service">Service status</string>
+    <string name="bluetoothfragment_carbs">Carbs to eat</string>
+    <string name="bluetoothfragment_revive">Revive service</string>
+    <string name="bluetoothfragment_discover">Discover devices</string>
+    <string name="bluetoothfragment_disconnect">Disconnect from device</string>
+
+
+
+
     <string name="bluetoothstatus_unavailable">Bluetooth not supported</string>
     <string name="bluetoothstatus_off">Bluetooth off</string>
     <string name="bluetoothstatus_on">Bluetooth on</string>
-    <string name="bluetoothstatus_discovering">Discovering&#8230;</string>
-    <string name="bluetoothstatus_connecting">Connecting&#8230;</string>
-    <string name="bluetoothstatus_failed">Connection failed</string>
-    <string name="bluetoothstatus_connected">Connected to:</string>
-    <string name="bluetoothstatus_dropped">DC: Reconnecting&#8230;</string>
-    <string name="bluetoothstatus_disconnecting">Disconnecting&#8230;</string>
-    <string name="bluetoothstatus_disconnected">Disconnected</string>
+
+
+
+
+
+
+
     <string name="bluetoothpump_serviceon">Service running</string>
     <string name="bluetoothpump_serviceoff">Service not running</string>
     <string name="bluetoothpump_servicebound">Service bound and running</string>
