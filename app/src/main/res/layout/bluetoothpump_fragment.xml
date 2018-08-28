@@ -45,7 +45,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -91,7 +91,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -137,7 +137,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -183,7 +183,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -229,7 +229,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -275,7 +275,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -321,7 +321,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView
@@ -367,7 +367,7 @@
                     android:gravity="center_horizontal"
                     android:paddingEnd="2dp"
                     android:paddingStart="2dp"
-                    android:text=":"
+                    android:text="@string/bluetoothfragment_seperator"
                     android:textSize="14sp" />
 
                 <TextView

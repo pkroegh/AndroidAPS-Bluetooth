@@ -8,19 +8,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.squareup.otto.Subscribe;
 
@@ -32,81 +23,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
-import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 
-import info.nightscout.androidaps.Config;
-import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.Services.Intents;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
-import info.nightscout.androidaps.events.EventInitializationChanged;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
-import info.nightscout.androidaps.plugins.Overview.Dialogs.BolusProgressDialog;
-import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
-import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
-import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPumpFragment;
-import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPumpPlugin;
 import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpStatusChanged;
-import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpUpdateGui;
-
-
-
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
-import info.nightscout.androidaps.plugins.PumpDanaR.SerialIOThread;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusProgress;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStart;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStartWithSpeed;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStop;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgCheckValue;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryAlarm;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryBasalHour;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryBolus;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryCarbo;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryDailyInsulin;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryDone;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryError;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryGlucose;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistoryRefill;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgHistorySuspend;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgPCCommStart;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgPCCommStop;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetActivateBasalProfile;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetBasalProfile;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetCarbsEntry;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetExtendedBolusStart;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetExtendedBolusStop;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetTempBasalStart;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetTempBasalStop;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSetTime;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingActiveProfile;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingBasal;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingGlucose;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingMaxValues;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingMeal;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingProfileRatios;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingProfileRatiosAll;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingPumpTime;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgSettingShippingInfo;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatus;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusBasic;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusBolusExtended;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusTempBasal;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.RecordTypes;
-import info.nightscout.androidaps.plugins.PumpDanaR.events.EventDanaRNewStatus;
-import info.nightscout.androidaps.plugins.PumpDanaR.services.AbstractSerialIOThread;
-import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.utils.HardLimits;
-import info.nightscout.utils.NSUpload;
 import info.nightscout.utils.SP;
 import info.nightscout.utils.ToastUtils;
 
@@ -122,6 +51,8 @@ public class BluetoothService extends Service {
     public BluetoothAdapter mBluetoothAdapter; //Bluetooth adapter connection
     public ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
     public BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
+    protected BluetoothDevice mBTDevice;
+    public String mDevName;
 
     public boolean mKeepDeviceConnected = false; //When true, device should always be connected
     protected Boolean mConnectionInProgress = false;
@@ -164,30 +95,27 @@ public class BluetoothService extends Service {
     }
 
     private void registerLocalBroadcastReceiver() {
-        MainApp.instance().getApplicationContext().registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
-        MainApp.instance().getApplicationContext().registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
-        MainApp.instance().getApplicationContext().registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        MainApp.instance().getApplicationContext().registerReceiver(BluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
+        MainApp.instance().getApplicationContext().registerReceiver(BluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
+        MainApp.instance().getApplicationContext().registerReceiver(BluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
     }
 
-    protected BroadcastReceiver receiver = new BroadcastReceiver() {
+    protected BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)){
-                mBTArrayAdapter.add(device.getName() + "\n" + device.getAddress()); // add the name to the list
-                mBTArrayAdapter.notifyDataSetChanged();
-                log.debug("Device found: " + device.getName() + "; MAC " + device.getAddress());
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DISCOVERING));
-            }else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                log.debug("Device was disconnected " + device.getName());//Device was disconnected
+            if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+                log.debug("Device was disconnected: " + device.getName());//Device was disconnected
                 if (mKeepDeviceConnected) { //Connection dropped, reconnect!
+                    log.debug("Reconnecting to device: " + device.getName());
                     MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DROPPED));
                     final String address = device.getAddress();
                     if (mConnectedThread != null){mConnectedThread.cancel();}
                     if (mConnectionInProgress){return;}
                     new Thread(){
                         public void run() {
+                            log.debug("Attempting to reconnect to device: " + address);
                             mConnectionInProgress = true;
                             boolean fail = false;
                             BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
@@ -211,10 +139,13 @@ public class BluetoothService extends Service {
                             if (fail == false) {
                                 mConnectedThread = new ConnectedThread(mBTSocket);
                                 mConnectedThread.start();
+                                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.CONNECTED));
                                 mConnectionInProgress = false;
                             } else {
                                 MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.FAILED));
                                 mConnectionInProgress = false;
+                                SystemClock.sleep(5000);
+                                run();
                             }
                         }
                     }.start();
@@ -229,8 +160,8 @@ public class BluetoothService extends Service {
                     MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DISCONNECTED));
                 }
             } else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
-                log.debug("Successfully Connected to: " + device.getName());//Device was disconnected
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventBluetoothPumpStatusChanged(EventBluetoothPumpStatusChanged.CONNECTED,device.getName()));
+                log.debug("Successfully connected to: " + device.getName());//Device was disconnected
+                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.CONNECTED));
             }
         }
     };
@@ -265,81 +196,220 @@ public class BluetoothService extends Service {
     @Override
     public void onDestroy() {
         log.debug("Service is at: onDestroy");
-        unregisterReceiver(receiver);
+        unregisterReceiver(BluetoothReceiver);
         if (mConnectedThread != null){
             mConnectedThread.cancel();
         }
         super.onDestroy();
     }
 
-    public void discover(){
-        // Check if the device is already discovering
-        if (mBluetoothAdapter.isDiscovering()){
-            log.debug("Stopping discovery");
-            mBluetoothAdapter.cancelDiscovery();
-            if (mBTSocket.isConnected()) {
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventBluetoothPumpStatusChanged(EventBluetoothPumpStatusChanged.CONNECTED,mBTSocket.getRemoteDevice().toString()));
+    private void bluetoothMessage(byte buffer[], int size){ //Handle inbound bluetooth messages
+        String readMessage = null;
+        try {
+            readMessage = new String(buffer, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        if (readMessage != null){
+            log.debug("Got message from Bluetooth: " + readMessage);
+            if (readMessage.contains("OK")){
+                log.debug("Pump confirmed message");
+                Intent intent = new Intent();
+                intent.setAction(GOT_OK);
+                sendBroadcast(intent);
+            } else if (readMessage.contains("what2")){
+
+
+
+
+
+
             } else {
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DISCONNECTED));
+
+
+
+
+
             }
         } else {
-            if (mBluetoothAdapter.isEnabled()) {
-                log.debug("Starting discovery");
-                mBTArrayAdapter.clear(); // clear items
-                mBluetoothAdapter.startDiscovery();
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DISCOVERING));
-            } else {
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.INVALID));
-            }
+            log.debug("Failed to read message from Bluetooth");
         }
     }
 
-    public AdapterView.OnItemClickListener mDeviceClickListener = new AdapterView.OnItemClickListener() {
-        public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
-            if(!mBluetoothAdapter.isEnabled()) {
-                MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.INVALID));
-                return;
+    public boolean confirmedMessage(String message){
+        mConfirmed = false;
+        //MainApp.instance().getApplicationContext().registerReceiver(confirmTransmit, new IntentFilter(BluetoothService.GOT_OK));
+        try {
+            log.debug("Writing to Bluetooth: " + message);
+            mConnectedThread.write(message + "\n");
+        } catch (Exception e) {
+            log.error("Unhandled exception", e);
+            return false;
+        }
+
+        return true;
+
+        /*
+        new Thread(new Runnable() { //Spawn new thread to listen for confirmation
+            private String myParam;
+            public Runnable init(String myParam) {
+                this.myParam = myParam;
+                return this;
             }
-            String info = ((TextView) v).getText().toString(); // Get the device MAC address, which is the last 17 chars in the View
-            final String address = info.substring(info.length() - 17);
-            // Spawn a new thread to avoid blocking the GUI one
-            mBluetoothAdapter.cancelDiscovery();
-            if (mConnectionInProgress)
-                return;
-            new Thread() {
-                public void run() {
-                    mConnectionInProgress = true;
-                    boolean fail = false;
-                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+            @Override
+            public void run() {
+                while(!mConfirmed){
+                    SystemClock.sleep(1000);
+                    //mConnectedThread.write(myParam + "\n");
+                }
+                cancel();
+            }
+            public void cancel() {
+                //unregisterReceiver(confirmTransmit);
+            }
+        }.init(message)).start();
+        SystemClock.sleep(1000);
+        if (mConfirmed){
+            mConfirmed = false;
+            return true;
+        } else {
+            log.warn("Failed to get conformation from pump!");
+            return false;
+        }
+        */
+    }
+
+    protected BroadcastReceiver confirmTransmit = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothService.GOT_OK.equals(action)){
+                log.debug("Got conformation from Bluetooth device");
+                mConfirmed = true;
+            }
+        }
+    };
+
+    public BluetoothService() {}
+
+    public class MyBinder extends Binder {
+        public BluetoothService getService() {
+            return BluetoothService.this;
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
+
+    public void connect() {
+
+        /*
+
+        if (mConnectionInProgress)
+            return;
+        new Thread() {
+            public void run() {
+                mConnectionInProgress = true;
+                boolean fail = false;
+                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+                try {
+                    mBTSocket = createBluetoothSocket(device);
+                } catch (IOException e) {
+                    fail = true;
+                    log.error("Socket creating failed");
+                }
+                try { // Establish the Bluetooth socket connection.
+                    mBTSocket.connect();
+                } catch (IOException e) {
+                    try {
+                        fail = true;
+                        mBTSocket.close();
+                    } catch (IOException e2) {
+                        //insert code to deal with this
+                        log.error("Socket creating failed");
+                    }
+                }
+                if (fail == false) {
+                    mConnectedThread = new ConnectedThread(mBTSocket);
+                    mConnectedThread.start();
+                    mConnectionInProgress = false;
+                } else {
+                    MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.FAILED));
+                    mConnectionInProgress = false;
+                }
+            }
+        }.start();
+*/
+        /*
+        if (mDanaRPump.password != -1 && mDanaRPump.password != SP.getInt(R.string.key_danar_password, -1)) {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.wrongpumppassword), R.raw.error);
+            return;
+        }
+        */
+
+        if (mConnectionInProgress)
+            return;
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mConnectionInProgress = true;
+                getBTSocketForSelectedPump();
+                if (mBTSocket == null || mBTDevice == null) {
+                    mConnectionInProgress = false;
+                    return; // Device not found
+                }
+                try {
+                    mBTSocket.connect();
+                } catch (IOException e) {
+                    //log.error("Unhandled exception", e);
+                    if (e.getMessage().contains("socket closed")) {
+                        log.error("Unhandled exception", e);
+                    }
+                }
+                if (isConnected()) {
+                    if (mConnectedThread != null) {
+                        mConnectedThread.cancel();
+                    }
+                    mConnectedThread = new ConnectedThread(mBTSocket);
+                    mConnectedThread.start();
+                    MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTED, 0));
+                }
+                mConnectionInProgress = false;
+            }
+        }).start();
+
+        mKeepDeviceConnected = true;
+
+    }
+
+    protected void getBTSocketForSelectedPump() {
+        mDevName = SP.getString(MainApp.sResources.getString(R.string.key_bluetooth_bt_name), "");
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        log.debug("Connecting to device: ", mDevName);
+        if (bluetoothAdapter != null) {
+            Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
+            for (BluetoothDevice device : bondedDevices) {
+                if (mDevName.equals(device.getName())) {
+                    mBTDevice = device;
+                    log.debug("Found device: ", device, ". Connecting...");
                     try {
                         mBTSocket = createBluetoothSocket(device);
                     } catch (IOException e) {
-                        fail = true;
-                        log.error("Socket creating failed");
+                        log.error("Error creating socket: ", e);
                     }
-                    try { // Establish the Bluetooth socket connection.
-                        mBTSocket.connect();
-                    } catch (IOException e) {
-                        try {
-                            fail = true;
-                            mBTSocket.close();
-                        } catch (IOException e2) {
-                            //insert code to deal with this
-                            log.error("Socket creating failed");
-                        }
-                    }
-                    if (fail == false) {
-                        mConnectedThread = new ConnectedThread(mBTSocket);
-                        mConnectedThread.start();
-                        mConnectionInProgress = false;
-                    } else {
-                        MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.FAILED));
-                        mConnectionInProgress = false;
-                    }
+                    break;
                 }
-            }.start();
+            }
+        } else {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.nobtadapter));
         }
-    };
+        if (mBTDevice == null) {
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.devicenotfound));
+        }
+    }
 
     private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
         try {
@@ -418,210 +488,6 @@ public class BluetoothService extends Service {
             }
         }
     }
-
-    private void bluetoothMessage(byte buffer[], int size){ //Handle inbound bluetooth messages
-        mConnectedThread.run(); //Restart listener
-        String readMessage = null;
-        try {
-            readMessage = new String(buffer, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        if (readMessage != null){
-            log.debug("Got message from Bluetooth: " + readMessage);
-            if (readMessage.contains("OK")){
-                Intent intent = new Intent();
-                intent.setAction(GOT_OK);
-                sendBroadcast(intent);
-            } else if (readMessage.contains("what2")){
-
-
-
-
-
-
-            } else {
-
-
-
-
-
-            }
-        } else {
-            log.debug("Failed to read message from Bluetooth");
-        }
-    }
-
-    private boolean confirmedMessage(String message){
-        mConfirmed = false;
-        MainApp.instance().getApplicationContext().registerReceiver(confirmTransmit, new IntentFilter(BluetoothService.GOT_OK));
-        try {
-            log.debug("Writing to Bluetooth: " + message);
-            mConnectedThread.write(message);
-        } catch (Exception e) {
-            log.error("Unhandled exception", e);
-        }
-        new Thread(new Runnable() { //Spawn new thread to listen for confirmation
-            private String myParam;
-            public Runnable init(String myParam) {
-                this.myParam = myParam;
-                return this;
-            }
-            @Override
-            public void run() {
-                while(!mConfirmed){
-                    SystemClock.sleep(10);
-                    mConnectedThread.write(myParam);
-                }
-                cancel();
-            }
-            public void cancel() {
-                unregisterReceiver(confirmTransmit);
-            }
-        }.init(message)).start();
-        SystemClock.sleep(400);
-        if (mConfirmed){
-            mConfirmed = false;
-            return true;
-        } else {
-            log.warn("Failed to get conformation from pump!");
-            return false;
-        }
-    }
-
-    protected BroadcastReceiver confirmTransmit = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (BluetoothService.GOT_OK.equals(action)){
-                log.debug("Got conformation from Bluetooth device");
-                mConfirmed = true;
-            }
-        }
-    };
-
-    public BluetoothService() {}
-
-    public class MyBinder extends Binder {
-        public BluetoothService getService() {
-            return BluetoothService.this;
-        }
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
-    }
-
-    public void connect() {
-
-        /*
-
-        if (mConnectionInProgress)
-            return;
-        new Thread() {
-            public void run() {
-                mConnectionInProgress = true;
-                boolean fail = false;
-                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-                try {
-                    mBTSocket = createBluetoothSocket(device);
-                } catch (IOException e) {
-                    fail = true;
-                    log.error("Socket creating failed");
-                }
-                try { // Establish the Bluetooth socket connection.
-                    mBTSocket.connect();
-                } catch (IOException e) {
-                    try {
-                        fail = true;
-                        mBTSocket.close();
-                    } catch (IOException e2) {
-                        //insert code to deal with this
-                        log.error("Socket creating failed");
-                    }
-                }
-                if (fail == false) {
-                    mConnectedThread = new ConnectedThread(mBTSocket);
-                    mConnectedThread.start();
-                    mConnectionInProgress = false;
-                } else {
-                    MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.FAILED));
-                    mConnectionInProgress = false;
-                }
-            }
-        }.start();
-*/
-
-/*
-        if (mDanaRPump.password != -1 && mDanaRPump.password != SP.getInt(R.string.key_danar_password, -1)) {
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.wrongpumppassword), R.raw.error);
-            return;
-        }
-
-        if (mConnectionInProgress)
-            return;
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                mConnectionInProgress = true;
-                getBTSocketForSelectedPump();
-                if (mRfcommSocket == null || mBTDevice == null) {
-                    mConnectionInProgress = false;
-                    return; // Device not found
-                }
-
-                try {
-                    mRfcommSocket.connect();
-                } catch (IOException e) {
-                    //log.error("Unhandled exception", e);
-                    if (e.getMessage().contains("socket closed")) {
-                        log.error("Unhandled exception", e);
-                    }
-                }
-
-                if (isConnected()) {
-                    if (mConnectedThread != null) {
-                        mSerialIOThread.disconnect("Recreate SerialIOThread");
-                    }
-                    mSerialIOThread = new SerialIOThread(mRfcommSocket);
-                    MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTED, 0));
-                }
-
-                mConnectionInProgress = false;
-            }
-        }).start();
-*/
-    }
-
-    /*
-    protected void getBTSocketForSelectedPump() {
-        mDevName = SP.getString(MainApp.sResources.getString(R.string.key_danar_bt_name), "");
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        if (bluetoothAdapter != null) {
-            Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
-
-            for (BluetoothDevice device : bondedDevices) {
-                if (mDevName.equals(device.getName())) {
-                    mBTDevice = device;
-                    try {
-                        mRfcommSocket = mBTDevice.createRfcommSocketToServiceRecord(SPP_UUID);
-                    } catch (IOException e) {
-                        log.error("Error creating socket: ", e);
-                    }
-                    break;
-                }
-            }
-        } else {
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.nobtadapter));
-        }
-        if (mBTDevice == null) {
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.devicenotfound));
-        }
-    }
-    */
 
     public boolean isConnected() {
         return mBTSocket != null && mBTSocket.isConnected();
@@ -713,6 +579,8 @@ public class BluetoothService extends Service {
     }
 
     public void getPumpStatus() {
+        log.debug("Getting pump status");
+        confirmedMessage("getPumpStatus");
 
         /*
 
@@ -981,7 +849,7 @@ public class BluetoothService extends Service {
     public void onStatusEvent(EventAppExit event) {
         log.debug("EventAppExit received");
         if (mConnectedThread != null){mConnectedThread.cancel();}
-        MainApp.instance().getApplicationContext().unregisterReceiver(receiver);
+        MainApp.instance().getApplicationContext().unregisterReceiver(BluetoothReceiver);
         stopSelf();
         log.debug("EventAppExit finished");
     }

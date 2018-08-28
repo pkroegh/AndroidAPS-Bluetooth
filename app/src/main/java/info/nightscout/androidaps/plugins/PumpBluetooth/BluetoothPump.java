@@ -14,7 +14,6 @@ import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
 import info.nightscout.utils.SP;
 
 public class BluetoothPump {
@@ -175,7 +174,7 @@ public class BluetoothPump {
 //        Evening / 17:00–21:59
 //        Night / 22:00–5:59
 
-        double dia = SP.getDouble(R.string.key_danarprofile_dia, Constants.defaultDIA);
+        double dia = SP.getDouble(R.string.key_bluetoothprofile_dia, Constants.defaultDIA);
 
         try {
             json.put("defaultProfile", PROFILE_PREFIX + (activeProfile + 1));
@@ -230,7 +229,7 @@ public class BluetoothPump {
         return PROFILE_PREFIX + (activeProfile + 1);
     }
 
-    public static double[] buildDanaRProfileRecord(Profile nsProfile) {
+    public static double[] buildBluetootPumpProfileRecord(Profile nsProfile) {
         double[] record = new double[24];
         for (Integer hour = 0; hour < 24; hour++) {
             //Some values get truncated to the next lower one.

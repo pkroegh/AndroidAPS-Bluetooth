@@ -13,6 +13,11 @@
             android:defaultValue="false"
             android:key="bluetoothpump_uploadstatus"
             android:title="@string/bluetoothpump_uploadstatus_title" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_bluetooth_useextended"
+            android:title="@string/bluetooth_useextended_title" />
     </PreferenceCategory>
 
 </PreferenceScreen>

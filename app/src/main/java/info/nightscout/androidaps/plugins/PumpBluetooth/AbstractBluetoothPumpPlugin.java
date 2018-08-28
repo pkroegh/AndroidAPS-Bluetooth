@@ -42,25 +42,12 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
     protected BluetoothPump pump = BluetoothPump.getInstance();
 
     protected BluetoothService sExecutionService;
-    public static boolean mServiceBound = false;
-    public static boolean mServiceStarted = false;
-    public String mServiceStatus;
-
-
-
 
     protected boolean mPluginPumpEnabled = false;
     protected boolean mPluginProfileEnabled = false;
     protected boolean mFragmentPumpVisible = true;
 
-
-
-
     protected boolean useExtendedBoluses = false;
-
-
-
-
 
     @Override
     public String getFragmentClass() {
@@ -340,15 +327,11 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public void connect(String from) {
-
-        /*
         if (sExecutionService != null) {
             sExecutionService.connect();
             pumpDescription.basalStep = pump.basalStep;
             pumpDescription.bolusStep = pump.bolusStep;
         }
-
-        */
     }
 
     @Override
@@ -363,6 +346,9 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public void disconnect(String from) {
+        if(from.contains("Queue empty")){
+            return;
+        }
         if (sExecutionService != null) sExecutionService.disconnect();
     }
 

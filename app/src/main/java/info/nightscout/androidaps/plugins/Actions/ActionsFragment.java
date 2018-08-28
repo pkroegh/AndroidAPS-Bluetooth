@@ -64,13 +64,13 @@ public class ActionsFragment extends SubscriberFragment implements View.OnClickL
         try {
             View view = inflater.inflate(R.layout.actions_fragment, container, false);
 
-            profileSwitch = (SingleClickButton) view.findViewById(R.id.actions_profileswitch);
-            tempTarget = (SingleClickButton) view.findViewById(R.id.actions_temptarget);
-            extendedBolus = (SingleClickButton) view.findViewById(R.id.actions_extendedbolus);
-            extendedBolusCancel = (SingleClickButton) view.findViewById(R.id.actions_extendedbolus_cancel);
-            tempBasal = (SingleClickButton) view.findViewById(R.id.actions_settempbasal);
-            tempBasalCancel = (SingleClickButton) view.findViewById(R.id.actions_canceltempbasal);
-            fill = (SingleClickButton) view.findViewById(R.id.actions_fill);
+            profileSwitch = view.findViewById(R.id.actions_profileswitch);
+            tempTarget = view.findViewById(R.id.actions_temptarget);
+            extendedBolus = view.findViewById(R.id.actions_extendedbolus);
+            extendedBolusCancel = view.findViewById(R.id.actions_extendedbolus_cancel);
+            tempBasal = view.findViewById(R.id.actions_settempbasal);
+            tempBasalCancel = view.findViewById(R.id.actions_canceltempbasal);
+            fill = view.findViewById(R.id.actions_fill);
 
             profileSwitch.setOnClickListener(this);
             tempTarget.setOnClickListener(this);
@@ -116,7 +116,7 @@ public class ActionsFragment extends SubscriberFragment implements View.OnClickL
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (MainApp.getConfigBuilder().getActiveProfileInterface().getProfile() == null) {
+                    if (ConfigBuilderPlugin.getActiveProfileInterface().getProfile() == null) {
                         tempTarget.setVisibility(View.GONE);
                         profileSwitch.setVisibility(View.GONE);
                         extendedBolus.setVisibility(View.GONE);

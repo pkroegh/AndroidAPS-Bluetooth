@@ -862,23 +862,28 @@
     <string name="combo_reservoir_level_insufficient_for_bolus">Not enough insulin for bolus left in reservoir</string>
     <string name="extendedbolusdeliveryerror">Extended bolus delivery error</string>
 
-
     <!-- BluetoothPump strings -->
     <string name="bluetoothpump">Bluetooth pump</string>
     <string name="bluetoothpump_shortname">BPUMP</string>
     <string name="bluetoothpump_settings">Bluetooth pump settings</string>
-    <string name="bluetooth_bt_name_title">DanaR Bluetooth device</string>
-    <string name="key_bluetooth_bt_name" translatable="false">danar_bt_name</string>
+    <string name="bluetooth_bt_name_title">Bluetooth pump device</string>
+    <string name="key_bluetooth_bt_name" translatable="false">bluetooth_bt_name</string>
     <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
+    <string name="bluetooth_useextended_title">Use extended bolus for >200%</string>
+    <string name="key_bluetooth_useextended" translatable="false">bluetooth_useextended</string>
+    <string name="key_bluetoothprofile_dia" translatable="false">bluetoothprofilee_dia</string>
 
-    <string name="bluetoothstatus_discovering">Discovering&#8230;</string>
-    <string name="bluetoothstatus_connecting">Connecting to:&#160;</string>
-    <string name="bluetoothstatus_connected">Connected to:&#160;</string>
-    <string name="bluetoothstatus_disconnecting">Disconnecting&#8230;</string>
+    <string name="bluetoothservice_stopped">Not running!</string> <!-- Service it not running -->
+    <string name="bluetoothservice_running">Running, not bound</string> <!-- Service it running but not bound -->
+    <string name="bluetoothservice_bound">Bound and running</string> <!-- Service it running and bound -->
+    <string name="bluetoothservice_invalid">Bluetooth not avaliable</string>
+
+    <string name="bluetoothstatus_connected">Connected</string>
+    <string name="bluetoothstatus_connecting">Connecting&#8230;</string>
     <string name="bluetoothstatus_disconnected">Disconnected</string>
-    <string name="bluetoothstatus_failed">Connection failed</string>
-    <string name="bluetoothstatus_dropped">Reconnecting to:&#160;</string>
+    <string name="bluetoothstatus_dropped">Reconnecting&#8230;</string>
     <string name="bluetoothstatus_invalid">Bluetooth not available</string>
+    <string name="bluetoothstatus_failed">Cannot connect to device</string>
 
     <string name="bluetoothfragment_label">BLUETOOTH PUMP</string>
     <string name="bluetoothfragment_client">Pump name</string>
@@ -888,24 +893,8 @@
     <string name="bluetoothfragment_revive">Revive service</string>
     <string name="bluetoothfragment_discover">Discover devices</string>
     <string name="bluetoothfragment_disconnect">Disconnect from device</string>
+    <string name="bluetoothfragment_seperator">:</string>
 
-
-
-
-    <string name="bluetoothstatus_unavailable">Bluetooth not supported</string>
-    <string name="bluetoothstatus_off">Bluetooth off</string>
-    <string name="bluetoothstatus_on">Bluetooth on</string>
-
-
-
-
-
-
-
-    <string name="bluetoothpump_serviceon">Service running</string>
-    <string name="bluetoothpump_serviceoff">Service not running</string>
-    <string name="bluetoothpump_servicebound">Service bound and running</string>
-    <string name="bluetoothpump_serviceunbound">Service unbound but running</string>
 
 </resources>
 

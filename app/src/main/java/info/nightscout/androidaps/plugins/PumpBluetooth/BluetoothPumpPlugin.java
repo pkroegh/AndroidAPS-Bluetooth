@@ -1,54 +1,29 @@
 package info.nightscout.androidaps.plugins.PumpBluetooth;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.os.SystemClock;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.squareup.otto.Subscribe;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-
-import info.nightscout.androidaps.BuildConfig;
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.DetailedBolusInfo;
+import info.nightscout.androidaps.data.PumpEnactResult;
+import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.PumpBluetooth.services.BluetoothService;
-import info.nightscout.androidaps.data.DetailedBolusInfo;
-import info.nightscout.androidaps.data.Profile;
-import info.nightscout.androidaps.data.PumpEnactResult;
-import info.nightscout.androidaps.db.ExtendedBolus;
-import info.nightscout.androidaps.db.Source;
-import info.nightscout.androidaps.db.TemporaryBasal;
-import info.nightscout.androidaps.interfaces.PluginBase;
-import info.nightscout.androidaps.interfaces.PumpDescription;
-import info.nightscout.androidaps.interfaces.PumpInterface;
-import info.nightscout.androidaps.interfaces.TreatmentsInterface;
-import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
-import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
-import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpUpdateGui;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
-import info.nightscout.androidaps.plugins.PumpDanaR.services.DanaRExecutionService;
-import info.nightscout.utils.DateUtil;
-import info.nightscout.utils.NSUpload;
 import info.nightscout.utils.Round;
 import info.nightscout.utils.SP;
 
@@ -57,28 +32,7 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
 
     private static boolean fromNSAreCommingFakedExtendedBoluses = false;
 
-
-
-
-    private boolean fragmentEnabled = true;
-    private boolean fragmentVisible = true;
-
-
-
-
-    static Integer batteryPercent = 50;
-    static Integer reservoirInUnits = 50;
-
-    private Date lastDataTime = new Date(0);
-
-
-
-
-
     private PumpDescription pumpDescription = new PumpDescription();
-
-
-
 
     private static BluetoothPumpPlugin plugin = null;
 
@@ -89,10 +43,7 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
     }
 
     public BluetoothPumpPlugin() {
-
-
-        useExtendedBoluses = SP.getBoolean("danar_useextended", false);
-
+        useExtendedBoluses = SP.getBoolean("bluetooth_useextended", false);
 
         Context context = MainApp.instance().getApplicationContext();
         Intent intent = new Intent(context, BluetoothService.class);
@@ -126,32 +77,35 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
         pumpDescription.storesCarbInfo = true;
     }
 
+    protected boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) MainApp.instance().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         public void onServiceDisconnected(ComponentName name) {
             log.debug("Service is disconnected");
             sExecutionService = null;
-
-
-            mServiceBound = false;
         }
         public void onServiceConnected(ComponentName name, IBinder service) {
             log.debug("Service is connected");
             BluetoothService.MyBinder myBinder = (BluetoothService.MyBinder) service;
             sExecutionService = myBinder.getService();
-            mServiceBound = true;
         }
     };
 
-
-
     //Starts the service and binds it
     public void reviveService() {
-        if (!mServiceStarted) {
+        if (!isServiceRunning(BluetoothService.class)) {
             log.debug("Starting service");
             Context context = MainApp.instance().getApplicationContext();
             Intent intent = new Intent(context, BluetoothService.class);
             context.startService(intent);
-            mServiceStarted = true;
         } else {
             log.debug("Service already started");
         }
@@ -160,39 +114,23 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
 
     //Unbinds service from activity
     private void unbindService() {
-        if (mServiceBound) {
-            Context context = MainApp.instance().getApplicationContext();
-            context.unbindService(mServiceConnection);
-            mServiceBound = false;
-        }
-        if (mServiceStarted){
-            setServiceText(MainApp.sResources.getString(R.string.bluetoothpump_serviceunbound));
-        } else if (!mServiceStarted) {
-            setServiceText(MainApp.sResources.getString(R.string.bluetoothpump_serviceoff));
+        if (isServiceRunning(BluetoothService.class)) {
+            if (sExecutionService != null) {
+                log.debug("Unbinding service...");
+                Context context = MainApp.instance().getApplicationContext();
+                context.unbindService(mServiceConnection);
+            }
         }
     }
 
     //Binds service
     private void bindService() {
-        if (!mServiceBound) {
+        if (sExecutionService == null) {
             Context context = MainApp.instance().getApplicationContext();
             Intent intent = new Intent(context, BluetoothService.class);
             context.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-            mServiceBound = true;
-        }
-        if (mServiceStarted && mServiceBound){
-            setServiceText(MainApp.sResources.getString(R.string.bluetoothpump_servicebound));
         }
     }
-
-    public void setServiceText(String serviceText){
-        mServiceStatus = serviceText;
-        MainApp.bus().post(new EventBluetoothPumpUpdateGui());
-    }
-
-
-
-
 
     @SuppressWarnings("UnusedParameters")
     @Subscribe

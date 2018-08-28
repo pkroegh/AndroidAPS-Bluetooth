@@ -132,6 +132,7 @@ public class MainApp extends Application {
             pluginsList.add(CareportalPlugin.getPlugin());
             if (Config.MDI) pluginsList.add(MDIPlugin.getPlugin());
             if (Config.VIRTUALPUMP) pluginsList.add(VirtualPumpPlugin.getPlugin());
+            if (Config.BLUETOOTHPUMP) pluginsList.add(BluetoothPumpPlugin.getPlugin()); //Bluetooth pump
             if (Config.APS) pluginsList.add(LoopPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSAMAPlugin.getPlugin());
@@ -155,10 +156,6 @@ public class MainApp extends Application {
                 pluginsList.add(SourceDexcomG5Plugin.getPlugin());
             if (Config.SMSCOMMUNICATORENABLED) pluginsList.add(SmsCommunicatorPlugin.getPlugin());
             pluginsList.add(FoodPlugin.getPlugin());
-
-            //Bluetooth pump
-            if (Config.BLUETOOTHPUMP) pluginsList.add(BluetoothPumpPlugin.getPlugin());
-
             pluginsList.add(WearPlugin.initPlugin(this));
             pluginsList.add(StatuslinePlugin.initPlugin(this));
             pluginsList.add(new PersistentNotificationPlugin(this));
