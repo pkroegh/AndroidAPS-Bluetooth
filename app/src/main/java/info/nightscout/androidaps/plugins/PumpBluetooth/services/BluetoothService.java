@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.SystemClock;
 import android.widget.ArrayAdapter;
 
 import com.squareup.otto.Subscribe;
@@ -19,8 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -34,6 +31,7 @@ import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
+import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPump;
 import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpStatusChanged;
 import info.nightscout.utils.HardLimits;
 import info.nightscout.utils.SP;
@@ -49,10 +47,12 @@ public class BluetoothService extends Service {
     public static final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // "random" unique identifier
 
     public BluetoothAdapter mBluetoothAdapter; //Bluetooth adapter connection
-    public ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
+    public SerialConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
     public BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
     protected BluetoothDevice mBTDevice;
     public String mDevName;
+
+    protected BluetoothPump pump = BluetoothPump.getInstance();
 
     public boolean mKeepDeviceConnected = false; //When true, device should always be connected
     protected Boolean mConnectionInProgress = false;
@@ -105,13 +105,14 @@ public class BluetoothService extends Service {
         public void onReceive(Context context, Intent intent) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             String action = intent.getAction();
+            /*
             if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
                 log.debug("Device was disconnected: " + device.getName());//Device was disconnected
                 if (mKeepDeviceConnected) { //Connection dropped, reconnect!
                     log.debug("Reconnecting to device: " + device.getName());
                     MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DROPPED));
                     final String address = device.getAddress();
-                    if (mConnectedThread != null){mConnectedThread.cancel();}
+                    if (mConnectedThread != null){mConnectedThread.dicsonnect();}
                     if (mConnectionInProgress){return;}
                     new Thread(){
                         public void run() {
@@ -137,7 +138,7 @@ public class BluetoothService extends Service {
                                 }
                             }
                             if (fail == false) {
-                                mConnectedThread = new ConnectedThread(mBTSocket);
+                                mConnectedThread = new SerialConnectedThread(mBTSocket);
                                 mConnectedThread.start();
                                 MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.CONNECTED));
                                 mConnectionInProgress = false;
@@ -150,17 +151,16 @@ public class BluetoothService extends Service {
                         }
                     }.start();
                     //Retry more then once!
-
-
-
                 } else {
                     if (mConnectedThread != null){
-                        mConnectedThread.cancel();
+                        mConnectedThread.disconnect();
                     }
                     MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.DISCONNECTED));
                 }
-            } else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
-                log.debug("Successfully connected to: " + device.getName());//Device was disconnected
+            } else
+            */
+            if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
+                log.debug("Successfully connected to: " + device.getName());
                 MainApp.bus().post(new EventBluetoothPumpStatusChanged().EventPassStatus(EventBluetoothPumpStatusChanged.CONNECTED));
             }
         }
@@ -198,7 +198,7 @@ public class BluetoothService extends Service {
         log.debug("Service is at: onDestroy");
         unregisterReceiver(BluetoothReceiver);
         if (mConnectedThread != null){
-            mConnectedThread.cancel();
+            mConnectedThread.disconnect();
         }
         super.onDestroy();
     }
@@ -241,7 +241,7 @@ public class BluetoothService extends Service {
         //MainApp.instance().getApplicationContext().registerReceiver(confirmTransmit, new IntentFilter(BluetoothService.GOT_OK));
         try {
             log.debug("Writing to Bluetooth: " + message);
-            mConnectedThread.write(message + "\n");
+            mConnectedThread.sendMessage(message + "\n");
         } catch (Exception e) {
             log.error("Unhandled exception", e);
             return false;
@@ -260,7 +260,7 @@ public class BluetoothService extends Service {
             public void run() {
                 while(!mConfirmed){
                     SystemClock.sleep(1000);
-                    //mConnectedThread.write(myParam + "\n");
+                    //mConnectedThread.sendMessage(myParam + "\n");
                 }
                 cancel();
             }
@@ -371,9 +371,9 @@ public class BluetoothService extends Service {
                 }
                 if (isConnected()) {
                     if (mConnectedThread != null) {
-                        mConnectedThread.cancel();
+                        mConnectedThread.disconnect();
                     }
-                    mConnectedThread = new ConnectedThread(mBTSocket);
+                    mConnectedThread = new SerialConnectedThread(mBTSocket);
                     mConnectedThread.start();
                     MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTED, 0));
                 }
@@ -381,7 +381,7 @@ public class BluetoothService extends Service {
             }
         }).start();
 
-        mKeepDeviceConnected = true;
+        //mKeepDeviceConnected = true;
 
     }
 
@@ -421,74 +421,6 @@ public class BluetoothService extends Service {
         return  device.createRfcommSocketToServiceRecord(BTMODULEUUID);
     }
 
-    public class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            // Get the input and output streams, using temp objects because
-            // member streams are final
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) { }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        public void run() {
-            byte[] buffer = new byte[1024];  // buffer store for the stream
-            int bytes; // bytes returned from read()
-            // Keep listening to the InputStream until an exception occurs
-            while (true) {
-                try {
-                    // Read from the InputStream
-                    bytes = mmInStream.available();
-                    if(bytes != 0) {
-                        buffer = new byte[1024];
-                        SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
-                        bytes = mmInStream.available(); // how many bytes are ready to be read?
-                        bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
-                        bluetoothMessage(buffer, bytes);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-
-                    break;
-                }
-            }
-        }
-
-        /* Call this from the main activity to send data to the remote device */
-        public synchronized void write(String input) {
-            if (!mmSocket.isConnected()) {
-                log.error("Socket not connected on Bluetooth write");
-                return;
-            }
-            byte[] bytes = input.getBytes(); //converts entered String into bytes
-            try {
-                mmOutStream.write(bytes);
-            } catch (Exception e) {
-                log.error("Service write exception: ", e);
-            }
-        }
-
-        /* Call this from the main activity to shutdown the connection */
-        public void cancel() {
-            try {
-                mmSocket.close();
-            } catch (IOException e) {
-
-            }
-        }
-    }
-
     public boolean isConnected() {
         return mBTSocket != null && mBTSocket.isConnected();
     }
@@ -499,13 +431,13 @@ public class BluetoothService extends Service {
 
     public void disconnect() {
         if (mConnectedThread != null) {
-            mConnectedThread.cancel();
+            mConnectedThread.disconnect();
         }
     }
 
     public void stopConnecting() {
         if (mConnectedThread != null) {
-            mConnectedThread.cancel();
+            mConnectedThread.disconnect();
         }
     }
 
@@ -574,80 +506,26 @@ public class BluetoothService extends Service {
     @Subscribe
     public void onStatusEvent(final EventPreferenceChange pch) {
         if (mConnectedThread != null) {
-            mConnectedThread.cancel();
+            mConnectedThread.disconnect();
         }
     }
 
     public void getPumpStatus() {
-        log.debug("Getting pump status");
-        confirmedMessage("getPumpStatus");
-
-        /*
-
         try {
-            MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingpumpstatus)));
-            MsgStatus statusMsg = new MsgStatus();
-            MsgStatusBasic statusBasicMsg = new MsgStatusBasic();
-            MsgStatusTempBasal tempStatusMsg = new MsgStatusTempBasal();
-            MsgStatusBolusExtended exStatusMsg = new MsgStatusBolusExtended();
-            MsgCheckValue checkValue = new MsgCheckValue();
-
-            if (mDanaRPump.isNewPump) {
-                mSerialIOThread.sendMessage(checkValue);
+            if (pump.isNewPump) {
+                pump.isNewPump = false;
+                /*
+                mConnectedThread.sendMessage(checkValue);
                 if (!checkValue.received) {
                     return;
                 }
+                */
             }
-
-            mSerialIOThread.sendMessage(statusMsg);
-            mSerialIOThread.sendMessage(statusBasicMsg);
-            MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingtempbasalstatus)));
-            mSerialIOThread.sendMessage(tempStatusMsg);
-            MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingextendedbolusstatus)));
-            mSerialIOThread.sendMessage(exStatusMsg);
-            MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingbolusstatus)));
-
-            long now = System.currentTimeMillis();
-            if (mDanaRPump.lastSettingsRead + 60 * 60 * 1000L < now || !MainApp.getSpecificPlugin(DanaRPlugin.class).isInitialized()) {
-                MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingpumpsettings)));
-                mSerialIOThread.sendMessage(new MsgSettingShippingInfo());
-                mSerialIOThread.sendMessage(new MsgSettingActiveProfile());
-                mSerialIOThread.sendMessage(new MsgSettingMeal());
-                mSerialIOThread.sendMessage(new MsgSettingBasal());
-                //0x3201
-                mSerialIOThread.sendMessage(new MsgSettingMaxValues());
-                mSerialIOThread.sendMessage(new MsgSettingGlucose());
-                mSerialIOThread.sendMessage(new MsgSettingActiveProfile());
-                mSerialIOThread.sendMessage(new MsgSettingProfileRatios());
-                mSerialIOThread.sendMessage(new MsgSettingProfileRatiosAll());
-                MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.gettingpumptime)));
-                mSerialIOThread.sendMessage(new MsgSettingPumpTime());
-                long timeDiff = (mDanaRPump.pumpTime.getTime() - System.currentTimeMillis()) / 1000L;
-                log.debug("Pump time difference: " + timeDiff + " seconds");
-                if (Math.abs(timeDiff) > 10) {
-                    mSerialIOThread.sendMessage(new MsgSetTime(new Date()));
-                    mSerialIOThread.sendMessage(new MsgSettingPumpTime());
-                    timeDiff = (mDanaRPump.pumpTime.getTime() - System.currentTimeMillis()) / 1000L;
-                    log.debug("Pump time difference: " + timeDiff + " seconds");
-                }
-                mDanaRPump.lastSettingsRead = now;
-            }
-
-            mDanaRPump.lastConnection = now;
-            MainApp.bus().post(new EventDanaRNewStatus());
-            MainApp.bus().post(new EventInitializationChanged());
-            NSUpload.uploadDeviceStatus();
-            if (mDanaRPump.dailyTotalUnits > mDanaRPump.maxDailyTotalUnits * Constants.dailyLimitWarning) {
-                log.debug("Approaching daily limit: " + mDanaRPump.dailyTotalUnits + "/" + mDanaRPump.maxDailyTotalUnits);
-                Notification reportFail = new Notification(Notification.APPROACHING_DAILY_LIMIT, MainApp.sResources.getString(R.string.approachingdailylimit), Notification.URGENT);
-                MainApp.bus().post(new EventNewNotification(reportFail));
-                NSUpload.uploadError(MainApp.sResources.getString(R.string.approachingdailylimit) + ": " + mDanaRPump.dailyTotalUnits + "/" + mDanaRPump.maxDailyTotalUnits + "U");
-            }
+            log.debug("Getting pump status");
+            confirmedMessage("getPumpStatus");
         } catch (Exception e) {
             log.error("Unhandled exception", e);
         }
-
-        */
     }
 
     public boolean tempBasal(int percent, int durationInHours) {
@@ -848,7 +726,7 @@ public class BluetoothService extends Service {
     @Subscribe
     public void onStatusEvent(EventAppExit event) {
         log.debug("EventAppExit received");
-        if (mConnectedThread != null){mConnectedThread.cancel();}
+        if (mConnectedThread != null){mConnectedThread.disconnect();}
         MainApp.instance().getApplicationContext().unregisterReceiver(BluetoothReceiver);
         stopSelf();
         log.debug("EventAppExit finished");
