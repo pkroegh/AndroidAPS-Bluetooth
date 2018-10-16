@@ -1,5 +1,6 @@
 package info.nightscout.androidaps.plugins.PumpBluetooth;
 
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
 import org.json.JSONException;
@@ -15,25 +16,28 @@ import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.ExtendedBolus;
+import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.interfaces.ConstraintsInterface;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.interfaces.TreatmentsInterface;
 import info.nightscout.androidaps.plugins.Overview.events.EventDismissNotification;
 import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
+import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
 import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
 import info.nightscout.androidaps.plugins.ProfileNS.NSProfilePlugin;
 import info.nightscout.androidaps.plugins.PumpBluetooth.services.BluetoothService;
+import info.nightscout.androidaps.plugins.PumpVirtual.events.EventVirtualPumpUpdateGui;
 import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.DecimalFormatter;
-import info.nightscout.utils.Round;
 
 public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInterface, ConstraintsInterface, ProfileInterface {
     protected Logger log = LoggerFactory.getLogger(AbstractBluetoothPumpPlugin.class);
@@ -133,6 +137,173 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
         return sExecutionService.isConnected() || sExecutionService.isConnecting();
     }
 
+    @Override
+    public Date lastDataTime() {
+        return new Date(pump.lastConnection);
+
+    }
+
+    @Override
+    public double getBaseBasalRate() {
+        return pump.currentBasal;
+    }
+
+    @Override
+    public void stopBolusDelivering() {
+        if (sExecutionService == null) {
+            log.error("stopBolusDelivering sExecutionService is null");
+            return;
+        }
+        sExecutionService.bolusStop();
+    }
+
+    @Override
+    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
+        PumpEnactResult result = new PumpEnactResult();
+        result.success = true;
+        result.bolusDelivered = detailedBolusInfo.insulin;
+        result.carbsDelivered = detailedBolusInfo.carbs;
+        result.enacted = result.bolusDelivered > 0 || result.carbsDelivered > 0;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+
+        Double delivering = 0d;
+
+        while (delivering < detailedBolusInfo.insulin) {
+            SystemClock.sleep(200);
+            EventOverviewBolusProgress bolusingEvent = EventOverviewBolusProgress.getInstance();
+            bolusingEvent.status = String.format(MainApp.sResources.getString(R.string.bolusdelivering), delivering);
+            bolusingEvent.percent = Math.min((int) (delivering / detailedBolusInfo.insulin * 100), 100);
+            MainApp.bus().post(bolusingEvent);
+            delivering += 0.1d;
+        }
+        SystemClock.sleep(200);
+        EventOverviewBolusProgress bolusingEvent = EventOverviewBolusProgress.getInstance();
+        bolusingEvent.status = String.format(MainApp.sResources.getString(R.string.bolusdelivered), detailedBolusInfo.insulin);
+        bolusingEvent.percent = 100;
+        MainApp.bus().post(bolusingEvent);
+        SystemClock.sleep(1000);
+        if (Config.logPumpComm)
+            log.debug("Delivering treatment insulin: " + detailedBolusInfo.insulin + "U carbs: " + detailedBolusInfo.carbs + "g " + result);
+        MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        MainApp.getConfigBuilder().addToHistoryTreatment(detailedBolusInfo);
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, boolean enforceNew) {
+        TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
+        TemporaryBasal tempBasal = new TemporaryBasal();
+        tempBasal.date = System.currentTimeMillis();
+        tempBasal.isAbsolute = true;
+        tempBasal.absoluteRate = absoluteRate;
+        tempBasal.durationInMinutes = durationInMinutes;
+        tempBasal.source = Source.USER;
+        PumpEnactResult result = new PumpEnactResult();
+        result.success = true;
+        result.enacted = true;
+        result.isTempCancel = false;
+        result.absolute = absoluteRate;
+        result.duration = durationInMinutes;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+        treatmentsInterface.addToHistoryTempBasal(tempBasal);
+        if (Config.logPumpComm)
+            log.debug("Setting temp basal absolute: " + result);
+        MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult setTempBasalPercent(Integer percent, Integer durationInMinutes, boolean enforceNew) {
+        TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
+        PumpEnactResult result = new PumpEnactResult();
+        if (MainApp.getConfigBuilder().isTempBasalInProgress()) {
+            result = cancelTempBasal(false);
+            if (!result.success)
+                return result;
+        }
+        TemporaryBasal tempBasal = new TemporaryBasal();
+        tempBasal.date = System.currentTimeMillis();
+        tempBasal.isAbsolute = false;
+        tempBasal.percentRate = percent;
+        tempBasal.durationInMinutes = durationInMinutes;
+        tempBasal.source = Source.USER;
+        result.success = true;
+        result.enacted = true;
+        result.percent = percent;
+        result.isPercent = true;
+        result.isTempCancel = false;
+        result.duration = durationInMinutes;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+        treatmentsInterface.addToHistoryTempBasal(tempBasal);
+        if (Config.logPumpComm)
+            log.debug("Settings temp basal percent: " + result);
+        MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
+        TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
+        PumpEnactResult result = cancelExtendedBolus();
+        if (!result.success)
+            return result;
+        ExtendedBolus extendedBolus = new ExtendedBolus();
+        extendedBolus.date = System.currentTimeMillis();
+        extendedBolus.insulin = insulin;
+        extendedBolus.durationInMinutes = durationInMinutes;
+        extendedBolus.source = Source.USER;
+        result.success = true;
+        result.enacted = true;
+        result.bolusDelivered = insulin;
+        result.isTempCancel = false;
+        result.duration = durationInMinutes;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+        treatmentsInterface.addToHistoryExtendedBolus(extendedBolus);
+        if (Config.logPumpComm)
+            log.debug("Setting extended bolus: " + result);
+        MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult cancelTempBasal(boolean force) {
+        TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
+        PumpEnactResult result = new PumpEnactResult();
+        result.success = true;
+        result.isTempCancel = true;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+        if (treatmentsInterface.isTempBasalInProgress()) {
+            result.enacted = true;
+            TemporaryBasal tempStop = new TemporaryBasal(System.currentTimeMillis());
+            tempStop.source = Source.USER;
+            treatmentsInterface.addToHistoryTempBasal(tempStop);
+            //tempBasal = null;
+            if (Config.logPumpComm)
+                log.debug("Canceling temp basal: " + result);
+            MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        }
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult cancelExtendedBolus() {
+        TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
+        PumpEnactResult result = new PumpEnactResult();
+        if (treatmentsInterface.isInHistoryExtendedBoluslInProgress()) {
+            ExtendedBolus exStop = new ExtendedBolus(System.currentTimeMillis());
+            exStop.source = Source.USER;
+            treatmentsInterface.addToHistoryExtendedBolus(exStop);
+        }
+        result.success = true;
+        result.enacted = true;
+        result.isTempCancel = true;
+        result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
+        if (Config.logPumpComm)
+            log.debug("Canceling extended basal: " + result);
+        MainApp.bus().post(new EventVirtualPumpUpdateGui());
+        return result;
+    }
+
     // Pump interface
     @Override
     public PumpEnactResult setNewBasalProfile(Profile profile) {
@@ -189,25 +360,7 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
         return true;
     }
 
-    @Override
-    public Date lastDataTime() {
-        return new Date(pump.lastConnection);
-    }
-
-    @Override
-    public double getBaseBasalRate() {
-        return pump.currentBasal;
-    }
-
-    @Override
-    public void stopBolusDelivering() {
-        if (sExecutionService == null) {
-            log.error("stopBolusDelivering sExecutionService is null");
-            return;
-        }
-        sExecutionService.bolusStop();
-    }
-
+    /*
     @Override
     public PumpEnactResult setTempBasalPercent(Integer percent, Integer durationInMinutes, boolean enforceNew) {
         PumpEnactResult result = new PumpEnactResult();
@@ -324,6 +477,8 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
             return result;
         }
     }
+
+    */
 
     @Override
     public void connect(String from) {

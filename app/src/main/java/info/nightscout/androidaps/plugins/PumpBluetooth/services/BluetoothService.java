@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.widget.ArrayAdapter;
 
 import com.squareup.otto.Subscribe;
@@ -31,8 +32,12 @@ import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
+import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.Overview.Dialogs.BolusProgressDialog;
+import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
 import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPump;
 import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpStatusChanged;
+import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.utils.HardLimits;
 import info.nightscout.utils.SP;
 import info.nightscout.utils.ToastUtils;
@@ -570,7 +575,6 @@ public class BluetoothService extends Service {
     public boolean bolus(double amount, int carbs, long carbtime, final Treatment t) {
 
         /*
-
         // HARDCODED LIMIT
         amount = MainApp.getConfigBuilder().applyBolusConstraints(amount);
         if (amount < 0) amount = 0d;
@@ -579,14 +583,14 @@ public class BluetoothService extends Service {
         String message = "bolus|" + "insulin=" + Double.toString((((int) (amount * 100)) / 100d)) + "U|durationInHours=" + Integer.toString(durationInHalfHours);
         log.debug("Pump action: " + message);
         return (mBTSocket.isConnected() && confirmedMessage("EnactPumpResult|" + message));
-
-
-
+        */
 
         if (!isConnected()) return false;
         if (BolusProgressDialog.stopPressed) return false;
 
         mBolusingTreatment = t;
+
+        /*
         int preferencesSpeed = SP.getInt(R.string.key_danars_bolusspeed, 0);
         MessageBase start;
         if (preferencesSpeed == 0)
@@ -594,15 +598,19 @@ public class BluetoothService extends Service {
         else
             start = new MsgBolusStartWithSpeed(amount, preferencesSpeed);
         MsgBolusStop stop = new MsgBolusStop(amount, t);
+        */
 
         if (carbs > 0) {
-            mSerialIOThread.sendMessage(new MsgSetCarbsEntry(carbtime, carbs));
+            confirmedMessage("carbs: " + carbs + " time: " + carbtime);
+            //mSerialIOThread.sendMessage(new MsgSetCarbsEntry(carbtime, carbs));
         }
 
-        MsgBolusProgress progress = new MsgBolusProgress(amount, t); // initialize static variables
+        //MsgBolusProgress progress = new MsgBolusProgress(amount, t); // initialize static variables
         long bolusStart = System.currentTimeMillis();
 
+        /*
         if (!stop.stopped) {
+
             mSerialIOThread.sendMessage(start);
         } else {
             t.insulin = 0d;
@@ -617,6 +625,7 @@ public class BluetoothService extends Service {
             }
         }
         SystemClock.sleep(300);
+        */
 
         EventOverviewBolusProgress bolusingEvent = EventOverviewBolusProgress.getInstance();
         bolusingEvent.t = t;
@@ -625,6 +634,7 @@ public class BluetoothService extends Service {
         mBolusingTreatment = null;
 
         int speed = 12;
+        /*
         switch (preferencesSpeed) {
             case 0:
                 speed = 12;
@@ -636,6 +646,7 @@ public class BluetoothService extends Service {
                 speed = 60;
                 break;
         }
+        */
         // try to find real amount if bolusing was interrupted or comm failed
         if (t.insulin != amount) {
             //disconnect("bolusingInterrupted");
@@ -654,11 +665,11 @@ public class BluetoothService extends Service {
                 ConfigBuilderPlugin.getCommandQueue().independentConnect("bolusingInterrupted", new Callback() {
                     @Override
                     public void run() {
-                        if (mDanaRPump.lastBolusTime.getTime() > System.currentTimeMillis() - 60 * 1000L) { // last bolus max 1 min old
-                            t.insulin = mDanaRPump.lastBolusAmount;
-                            log.debug("Used bolus amount from history: " + mDanaRPump.lastBolusAmount);
+                        if (pump.lastBolusTime.getTime() > System.currentTimeMillis() - 60 * 1000L) { // last bolus max 1 min old
+                            t.insulin = pump.lastBolusAmount;
+                            log.debug("Used bolus amount from history: " + pump.lastBolusAmount);
                         } else {
-                            log.debug("Bolus amount in history too old: " + mDanaRPump.lastBolusTime.toLocaleString());
+                            log.debug("Bolus amount in history too old: " + pump.lastBolusTime.toLocaleString());
                         }
                         synchronized (o) {
                             o.notify();
@@ -674,15 +685,12 @@ public class BluetoothService extends Service {
         } else {
             ConfigBuilderPlugin.getCommandQueue().readStatus("bolusOK", null);
         }
-
-
-        */
-
         return true;
     }
 
     public boolean carbsEntry(int amount) {
-
+        if (!isConnected()) return false;
+        confirmedMessage("carbsEntry: " + amount);
 
         /*
         if (!isConnected()) return false;
@@ -701,25 +709,23 @@ public class BluetoothService extends Service {
     }
 
     public boolean updateBasalsInPump(final Profile profile) {
-
-
-
-        /*
-
         if (!isConnected()) return false;
         MainApp.bus().post(new EventPumpStatusChanged(MainApp.sResources.getString(R.string.updatingbasalrates)));
-        double[] basal = DanaRPump.buildDanaRProfileRecord(profile);
+        double[] basal = BluetoothPump.buildBluetootPumpProfileRecord(profile);
+
+        log.debug("updateBasalsInPump got basal: " + basal);
+        confirmedMessage("Basal: " + basal);
+        pump.lastSettingsRead = 0;
+        /*
         MsgSetBasalProfile msgSet = new MsgSetBasalProfile((byte) 0, basal);
         mSerialIOThread.sendMessage(msgSet);
         MsgSetActivateBasalProfile msgActivate = new MsgSetActivateBasalProfile((byte) 0);
         mSerialIOThread.sendMessage(msgActivate);
         mDanaRPump.lastSettingsRead = 0; // force read full settings
-        getPumpStatus();
-        MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.DISCONNECTING));
-
         */
 
-
+        getPumpStatus();
+        MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.DISCONNECTING));
         return true;
     }
 

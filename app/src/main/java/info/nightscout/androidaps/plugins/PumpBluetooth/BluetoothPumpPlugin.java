@@ -15,16 +15,10 @@ import org.slf4j.LoggerFactory;
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.data.DetailedBolusInfo;
-import info.nightscout.androidaps.data.PumpEnactResult;
-import info.nightscout.androidaps.db.TemporaryBasal;
-import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.interfaces.PumpDescription;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.PumpBluetooth.services.BluetoothService;
-import info.nightscout.utils.Round;
 import info.nightscout.utils.SP;
 
 public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
@@ -179,6 +173,9 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
         return pump.lastConnection > 0 && pump.isExtendedBolusEnabled && pump.maxBasal > 0;
     }
 
+
+
+    /*
     @Override
     public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
         ConfigBuilderPlugin configBuilderPlugin = MainApp.getConfigBuilder();
@@ -404,4 +401,7 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
     public PumpEnactResult loadEvents() {
         return null; // no history, not needed
     }
+
+    */
+
 }
