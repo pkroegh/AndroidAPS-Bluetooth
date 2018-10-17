@@ -159,13 +159,19 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
+        String message = "deliverTreatment";
+        message = message.concat(" insulin: ");
+        message = message.concat(Double.toString(detailedBolusInfo.insulin));
+        message = message.concat(" carbs: ");
+        message = message.concat(Double.toString(detailedBolusInfo.carbs));
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         PumpEnactResult result = new PumpEnactResult();
         result.success = true;
         result.bolusDelivered = detailedBolusInfo.insulin;
         result.carbsDelivered = detailedBolusInfo.carbs;
         result.enacted = result.bolusDelivered > 0 || result.carbsDelivered > 0;
         result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
-
         Double delivering = 0d;
 
         while (delivering < detailedBolusInfo.insulin) {
@@ -191,6 +197,13 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, boolean enforceNew) {
+        String message = "setTempBasalAbsolute";
+        message = message.concat(" tempBasal: ");
+        message = message.concat(Double.toString(absoluteRate));
+        message = message.concat(" duration: ");
+        message = message.concat(Integer.toString(durationInMinutes));
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         TemporaryBasal tempBasal = new TemporaryBasal();
         tempBasal.date = System.currentTimeMillis();
@@ -214,6 +227,13 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult setTempBasalPercent(Integer percent, Integer durationInMinutes, boolean enforceNew) {
+        String message = "setTempBasalPercent";
+        message = message.concat(" percentage: ");
+        message = message.concat(Integer.toString(percent));
+        message = message.concat(" duration: ");
+        message = message.concat(Integer.toString(durationInMinutes));
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
         if (MainApp.getConfigBuilder().isTempBasalInProgress()) {
@@ -243,6 +263,13 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
+        String message = "setExtendedBolus";
+        message = message.concat(" insulin: ");
+        message = message.concat(Double.toString(insulin));
+        message = message.concat(" duration: ");
+        message = message.concat(Integer.toString(durationInMinutes));
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = cancelExtendedBolus();
         if (!result.success)
@@ -267,6 +294,9 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult cancelTempBasal(boolean force) {
+        String message = "cancelTempBasal";
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
         result.success = true;
@@ -287,6 +317,9 @@ public abstract class AbstractBluetoothPumpPlugin implements PluginBase, PumpInt
 
     @Override
     public PumpEnactResult cancelExtendedBolus() {
+        String message = "cancelExtendedBolus";
+        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
         if (treatmentsInterface.isInHistoryExtendedBoluslInProgress()) {

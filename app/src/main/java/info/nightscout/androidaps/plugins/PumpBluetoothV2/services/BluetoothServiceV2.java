@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetooth.services;
+package info.nightscout.androidaps.plugins.PumpBluetoothV2.services;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -37,15 +37,17 @@ import info.nightscout.androidaps.plugins.Overview.Dialogs.BolusProgressDialog;
 import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
 import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPump;
 import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpStatusChanged;
+import info.nightscout.androidaps.plugins.PumpBluetooth.services.BluetoothService;
+import info.nightscout.androidaps.plugins.PumpBluetooth.services.SerialConnectedThread;
 import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.utils.HardLimits;
 import info.nightscout.utils.SP;
 import info.nightscout.utils.ToastUtils;
 
-public class BluetoothService extends Service {
+public class BluetoothServiceV2 extends Service {
     protected Logger log = LoggerFactory.getLogger(BluetoothService.class);
 
-    protected IBinder mBinder = new BluetoothService.MyBinder();
+    protected IBinder mBinder = new BluetoothServiceV2.MyBinder();
 
     public ArrayAdapter<String> mBTArrayAdapter;
 
@@ -288,18 +290,18 @@ public class BluetoothService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (BluetoothService.GOT_OK.equals(action)){
+            if (BluetoothServiceV2.GOT_OK.equals(action)){
                 log.debug("Got conformation from Bluetooth device");
                 mConfirmed = true;
             }
         }
     };
 
-    public BluetoothService() {}
+    public BluetoothServiceV2() {}
 
     public class MyBinder extends Binder {
-        public BluetoothService getService() {
-            return BluetoothService.this;
+        public BluetoothServiceV2 getService() {
+            return BluetoothServiceV2.this;
         }
     }
 

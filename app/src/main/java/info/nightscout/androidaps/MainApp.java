@@ -51,6 +51,7 @@ import info.nightscout.androidaps.plugins.ProfileLocal.LocalProfilePlugin;
 import info.nightscout.androidaps.plugins.ProfileNS.NSProfilePlugin;
 import info.nightscout.androidaps.plugins.ProfileSimple.SimpleProfilePlugin;
 import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPumpPlugin;
+import info.nightscout.androidaps.plugins.PumpBluetoothV2.BluetoothPumpPluginV2;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaRKorean.DanaRKoreanPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaRS.DanaRSPlugin;
@@ -133,6 +134,7 @@ public class MainApp extends Application {
             if (Config.MDI) pluginsList.add(MDIPlugin.getPlugin());
             if (Config.VIRTUALPUMP) pluginsList.add(VirtualPumpPlugin.getPlugin());
             if (Config.BLUETOOTHPUMP) pluginsList.add(BluetoothPumpPlugin.getPlugin()); //Bluetooth pump
+            if (Config.BLUETOOTHPUMPV2) pluginsList.add(BluetoothPumpPluginV2.getPlugin()); //Bluetooth pump
             if (Config.APS) pluginsList.add(LoopPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSAMAPlugin.getPlugin());

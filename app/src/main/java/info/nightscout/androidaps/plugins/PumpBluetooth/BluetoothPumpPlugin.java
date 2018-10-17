@@ -24,6 +24,14 @@ import info.nightscout.utils.SP;
 public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
     private static Logger log = LoggerFactory.getLogger(BluetoothPumpPlugin.class);
 
+
+    public static Double defaultBasalValue = 0.2d;
+
+    static Integer batteryPercent = 50;
+    static Integer reservoirInUnits = 50;
+
+
+
     private static boolean fromNSAreCommingFakedExtendedBoluses = false;
 
     private PumpDescription pumpDescription = new PumpDescription();
@@ -37,6 +45,34 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
     }
 
     public BluetoothPumpPlugin() {
+        pumpDescription.isBolusCapable = true;
+        pumpDescription.bolusStep = 0.1d;
+
+        pumpDescription.isExtendedBolusCapable = true;
+        pumpDescription.extendedBolusStep = 0.05d;
+        pumpDescription.extendedBolusDurationStep = 30;
+        pumpDescription.extendedBolusMaxDuration = 8 * 60;
+
+        pumpDescription.isTempBasalCapable = true;
+        pumpDescription.tempBasalStyle = PumpDescription.PERCENT | PumpDescription.ABSOLUTE;
+
+        pumpDescription.maxTempPercent = 500;
+        pumpDescription.tempPercentStep = 10;
+
+        pumpDescription.tempDurationStep = 30;
+        pumpDescription.tempMaxDuration = 24 * 60;
+
+
+        pumpDescription.isSetBasalProfileCapable = true;
+        pumpDescription.basalStep = 0.01d;
+        pumpDescription.basalMinimumRate = 0.01d;
+
+        pumpDescription.isRefillingCapable = false;
+
+
+
+
+        /*
         useExtendedBoluses = SP.getBoolean("bluetooth_useextended", false);
 
         Context context = MainApp.instance().getApplicationContext();
@@ -69,6 +105,7 @@ public class BluetoothPumpPlugin extends AbstractBluetoothPumpPlugin {
         pumpDescription.isRefillingCapable = true;
 
         pumpDescription.storesCarbInfo = true;
+        */
     }
 
     protected boolean isServiceRunning(Class<?> serviceClass) {

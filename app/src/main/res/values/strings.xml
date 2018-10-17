@@ -895,6 +895,9 @@
     <string name="bluetoothfragment_disconnect">Disconnect from device</string>
     <string name="bluetoothfragment_seperator">:</string>
 
+    <!-- BluetoothPumpV2 strings -->
+    <string name="bluetoothpumpv2">Bluetooth pump V2</string>
+    <string name="bluetoothpump_shortnamev2">BPU2</string>
 
 </resources>
 
