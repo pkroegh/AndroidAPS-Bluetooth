@@ -206,6 +206,7 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
     @Override
     public void connect(String reason) {
         if (sExecutionService != null) {
+            log.debug("Starting service");
             sExecutionService.connect();
         }
         if (!Config.NSCLIENT && !Config.G5UPLOADER)
