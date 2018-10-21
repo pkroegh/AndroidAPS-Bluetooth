@@ -32,7 +32,6 @@ import info.nightscout.androidaps.interfaces.TreatmentsInterface;
 import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
 import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
-import info.nightscout.androidaps.plugins.PumpBluetooth.services.BluetoothService;
 import info.nightscout.androidaps.plugins.PumpBluetoothV2.events.EventBluetoothPumpV2UpdateGui;
 import info.nightscout.androidaps.plugins.PumpBluetoothV2.services.BluetoothServiceV2;
 import info.nightscout.utils.DateUtil;
@@ -44,7 +43,7 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     public static Double defaultBasalValue = 0.2d;
 
-    //Service container
+    //Service pointer
     protected BluetoothServiceV2 sExecutionService;
 
     static Integer batteryPercent = 50;
@@ -106,6 +105,62 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
         pumpDescription.isRefillingCapable = false;
     }
+
+    //Service related functions
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) MainApp.instance().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        public void onServiceDisconnected(ComponentName name) {
+            log.debug("Service is disconnected");
+            sExecutionService = null;
+        }
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            log.debug("Service is connected");
+            BluetoothServiceV2.ServiceBinder thisBinder = (BluetoothServiceV2.ServiceBinder) service;
+            sExecutionService = thisBinder.getService();
+        }
+    };
+
+    //Starts the service and binds it
+    protected void createService() {
+        if (!isServiceRunning(BluetoothServiceV2.class)) {
+            log.debug("Starting service");
+            Context context = MainApp.instance().getApplicationContext();
+            Intent intent = new Intent(context, BluetoothServiceV2.class);
+            context.startService(intent);
+        }
+        bindService();
+    }
+
+    //Binds service
+    private void bindService() {
+        if (sExecutionService == null) {
+            Context context = MainApp.instance().getApplicationContext();
+            Intent intent = new Intent(context, BluetoothServiceV2.class);
+            context.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    /*
+    //Unbinds service from activity
+    private void unbindService() {
+        if (isServiceRunning(BluetoothServiceV2.class)) {
+            if (sExecutionService != null) {
+                log.debug("Unbinding service...");
+                Context context = MainApp.instance().getApplicationContext();
+                context.unbindService(mServiceConnection);
+            }
+        }
+    }
+    */
 
     @Override
     public String getFragmentClass() {
@@ -180,6 +235,9 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public boolean isInitialized() {
+        if (!isServiceRunning(BluetoothServiceV2.class)){
+            createService();
+        }
         return true;
     }
 
@@ -190,23 +248,36 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public boolean isBusy() {
-        return false;
+        return sExecutionService.isConnecting();
     }
 
     @Override
     public boolean isConnected() {
-        return true;
+        if (sExecutionService != null) {
+            return sExecutionService.isConnected();
+        } else {
+            log.debug("ERROR: Service not running");
+            return false;
+        }
     }
 
     @Override
     public boolean isConnecting() {
-        return false;
+        if (sExecutionService != null) {
+            return sExecutionService.isConnecting();
+        } else {
+            log.debug("ERROR: Service not running");
+            return false;
+        }
     }
 
     @Override
     public void connect(String reason) {
         if (sExecutionService != null) {
-            log.debug("Starting service");
+            log.debug("BluetoothServiceV2 Connecting to client from BluetoothPumpPluginV2.connect");
+            sExecutionService.connect();
+        } else {
+            createService();
             sExecutionService.connect();
         }
         if (!Config.NSCLIENT && !Config.G5UPLOADER)
@@ -225,62 +296,6 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
     @Override
     public void getPumpStatus() {
         lastDataTime = new Date();
-    }
-
-    //Service related functions
-    protected boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) MainApp.instance().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
-        public void onServiceDisconnected(ComponentName name) {
-            log.debug("Service is disconnected");
-            sExecutionService = null;
-        }
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            log.debug("Service is connected");
-            BluetoothServiceV2.MyBinder myBinder = (BluetoothServiceV2.MyBinder) service;
-            sExecutionService = myBinder.getService();
-        }
-    };
-
-    //Starts the service and binds it
-    public void reviveService() {
-        if (!isServiceRunning(BluetoothService.class)) {
-            log.debug("Starting service");
-            Context context = MainApp.instance().getApplicationContext();
-            Intent intent = new Intent(context, BluetoothService.class);
-            context.startService(intent);
-        } else {
-            log.debug("Service already started");
-        }
-        bindService();
-    }
-
-    //Unbinds service from activity
-    private void unbindService() {
-        if (isServiceRunning(BluetoothService.class)) {
-            if (sExecutionService != null) {
-                log.debug("Unbinding service...");
-                Context context = MainApp.instance().getApplicationContext();
-                context.unbindService(mServiceConnection);
-            }
-        }
-    }
-
-    //Binds service
-    private void bindService() {
-        if (sExecutionService == null) {
-            Context context = MainApp.instance().getApplicationContext();
-            Intent intent = new Intent(context, BluetoothService.class);
-            context.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
     }
 
     @Override
@@ -307,6 +322,14 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
     @Override
     public double getBaseBasalRate() {
         Profile profile = MainApp.getConfigBuilder().getProfile();
+        if (sExecutionService != null && sExecutionService.isConnected() && profile.getBasal() != null){
+            String message = "getBaseBasalRate";
+            message = message.concat(" rate: ");
+            message = message.concat(Double.toString(profile.getBasal()));
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
         if (profile != null)
             return profile.getBasal() != null ? profile.getBasal() : 0d;
         else
@@ -315,12 +338,16 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
-        String message = "deliverTreatment";
-        message = message.concat(" insulin: ");
-        message = message.concat(Double.toString(detailedBolusInfo.insulin));
-        message = message.concat(" carbs: ");
-        message = message.concat(Double.toString(detailedBolusInfo.carbs));
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "deliverTreatment";
+            message = message.concat(" insulin: ");
+            message = message.concat(Double.toString(detailedBolusInfo.insulin));
+            message = message.concat(" carbs: ");
+            message = message.concat(Double.toString(detailedBolusInfo.carbs));
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         PumpEnactResult result = new PumpEnactResult();
         result.success = true;
@@ -355,20 +382,26 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public void stopBolusDelivering() {
-        String message = "stopBolusDelivering";
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
-
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "stopBolusDelivering";
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
     }
 
     @Override
     public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, boolean enforceNew) {
-        String message = "setTempBasalAbsolute";
-        message = message.concat(" tempBasal: ");
-        message = message.concat(Double.toString(absoluteRate));
-        message = message.concat(" duration: ");
-        message = message.concat(Integer.toString(durationInMinutes));
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
-
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "setTempBasalAbsolute";
+            message = message.concat(" tempBasal: ");
+            message = message.concat(Double.toString(absoluteRate));
+            message = message.concat(" duration: ");
+            message = message.concat(Integer.toString(durationInMinutes));
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         TemporaryBasal tempBasal = new TemporaryBasal();
@@ -394,12 +427,16 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public PumpEnactResult setTempBasalPercent(Integer percent, Integer durationInMinutes, boolean enforceNew) {
-        String message = "setTempBasalPercent";
-        message = message.concat(" percentage: ");
-        message = message.concat(Integer.toString(percent));
-        message = message.concat(" duration: ");
-        message = message.concat(Integer.toString(durationInMinutes));
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "setTempBasalPercent";
+            message = message.concat(" percentage: ");
+            message = message.concat(Integer.toString(percent));
+            message = message.concat(" duration: ");
+            message = message.concat(Integer.toString(durationInMinutes));
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
@@ -431,12 +468,16 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
-        String message = "setExtendedBolus";
-        message = message.concat(" insulin: ");
-        message = message.concat(Double.toString(insulin));
-        message = message.concat(" duration: ");
-        message = message.concat(Integer.toString(durationInMinutes));
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "setExtendedBolus";
+            message = message.concat(" insulin: ");
+            message = message.concat(Double.toString(insulin));
+            message = message.concat(" duration: ");
+            message = message.concat(Integer.toString(durationInMinutes));
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = cancelExtendedBolus();
@@ -463,8 +504,12 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public PumpEnactResult cancelTempBasal(boolean force) {
-        String message = "cancelTempBasal";
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "cancelTempBasal";
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
@@ -487,8 +532,12 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public PumpEnactResult cancelExtendedBolus() {
-        String message = "cancelExtendedBolus";
-        sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        if (sExecutionService != null && sExecutionService.isConnected()){
+            String message = "cancelExtendedBolus";
+            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+        } else {
+            log.error("Service not running or connected!");
+        }
 
         TreatmentsInterface treatmentsInterface = MainApp.getConfigBuilder();
         PumpEnactResult result = new PumpEnactResult();
@@ -552,7 +601,7 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public String deviceID() {
-        return "VirtualPump";
+        return "BluetoothPump";
     }
 
     @Override

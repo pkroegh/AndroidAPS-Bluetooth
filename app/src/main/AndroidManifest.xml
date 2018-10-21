@@ -159,7 +159,8 @@
 
         <service
             android:name=".plugins.PumpBluetoothV2.services.BluetoothServiceV2"
-            android:exported="false" />
+            android:enabled="true"
+            android:exported="true" />
 
         <meta-data
             android:name="io.fabric.ApiKey"

@@ -35,6 +35,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
 
     private TextView vPumpName;
     private TextView vBluetoothStatus;
+    private TextView vThreadStatus;
 
     private static Handler sLoopHandler = new Handler();
     private static Runnable sRefreshLoop = null;
@@ -63,6 +64,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
 
             vPumpName = view.findViewById(R.id.bluetoothpump_client);
             vBluetoothStatus = view.findViewById(R.id.bluetoothpump_bluetoothstatus);
+            vThreadStatus = view.findViewById(R.id.bluetoothpump_threadstatus);
 
             basaBasalRateView = view.findViewById(R.id.virtualpump_basabasalrate);
             tempBasalView = view.findViewById(R.id.virtualpump_tempbasal);
@@ -72,12 +74,13 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
 
             //Connection between layout element and layout page (Button elements)
             bBluetoothConnect = view.findViewById(R.id.service_connect);
+
             //Click listeners
             bBluetoothConnect.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
-                    bluetoothPump.reviveService();
+                    bluetoothPump.createService();
                 }
             });
 
@@ -102,12 +105,10 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                 @Override
                 public void run() {
                     BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
-
                     //Bluetooth service and bluetooth related GUI
-
                     if (BluetoothAdapter.getDefaultAdapter() != null){
                         if (bluetoothPump.sExecutionService != null) {
-                            if(bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
+                            if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
                                 vPumpName.setText(bluetoothPump.sExecutionService.mDevName);
                                 if (bluetoothPump.sExecutionService.isConnecting()) {
                                     vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_connecting));
@@ -118,6 +119,11 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                                 } else {
                                     vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_disconnected));
                                 }
+                            }
+                            if (bluetoothPump.sExecutionService.mConnectedThread != null) {
+                                vThreadStatus.setText(MainApp.sResources.getString(R.string.bluetooththread_running));
+                            } else {
+                                vThreadStatus.setText(MainApp.sResources.getString(R.string.bluetooththread_stopped));
                             }
                         }
                     } else {

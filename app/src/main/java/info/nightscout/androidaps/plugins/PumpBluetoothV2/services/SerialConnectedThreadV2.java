@@ -11,13 +11,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPump;
 import info.nightscout.utils.NSUpload;
 
 public class SerialConnectedThreadV2 extends Thread{
     private static Logger log = LoggerFactory.getLogger(SerialConnectedThreadV2.class);
-
-    protected BluetoothPump pump = BluetoothPump.getInstance();
 
     private InputStream mInputStream = null;
     private OutputStream mOutputStream = null;
@@ -66,29 +63,6 @@ public class SerialConnectedThreadV2 extends Thread{
                         } else if (stringMessage.contains("pumpStatus")){
                             long now = System.currentTimeMillis();
                             log.debug("Got message back from pump!");
-                            /*
-                            pump.dailyTotalUnits = intFromBuff(bytes, 0, 3) / 750d;
-                            pump.isExtendedInProgress = intFromBuff(bytes, 3, 1) == 1;
-                            pump.extendedBolusMinutes = intFromBuff(bytes, 4, 2);
-                            pump.extendedBolusAmount = intFromBuff(bytes, 6, 2) / 100d;
-                            Double lastBolusAmount = intFromBuff(bytes, 13, 2) / 100d;
-                            if (lastBolusAmount != 0d) {
-                                pump.lastBolusTime = dateTimeFromBuff(bytes, 8);
-                                pump.lastBolusAmount = lastBolusAmount;
-                            }
-                            pump.iob = intFromBuff(bytes, 15, 2) / 100d;
-
-                            pump.pumpSuspended = intFromBuff(bytes, 0, 1) == 1;
-                            pump.calculatorEnabled = intFromBuff(bytes, 1, 1) == 1;
-                            pump.dailyTotalUnits = intFromBuff(bytes, 2, 3) / 750d;
-                            pump.maxDailyTotalUnits = intFromBuff(bytes, 5, 2) / 100;
-                            pump.reservoirRemainingUnits = intFromBuff(bytes, 7, 3) / 750d;
-                            pump.bolusBlocked = intFromBuff(bytes, 10, 1) == 1;
-                            pump.currentBasal = intFromBuff(bytes, 11, 2) / 100d;
-                            pump.batteryRemaining = intFromBuff(bytes, 20, 1);
-                            */
-
-                            pump.lastConnection = now;
 
                             NSUpload.uploadDeviceStatus();
                         } else {
@@ -102,7 +76,7 @@ public class SerialConnectedThreadV2 extends Thread{
                 log.error("Thread exception: ", e);
             mKeepRunning = false;
         }
-        disconnect();
+        //disconnect();
     }
 
     void appendToBuffer(byte[] newData, int gotBytes) {

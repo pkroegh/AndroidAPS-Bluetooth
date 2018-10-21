@@ -898,6 +898,10 @@
     <!-- BluetoothPumpV2 strings -->
     <string name="bluetoothpumpv2">Bluetooth pump V2</string>
     <string name="bluetoothpump_shortnamev2">BPU2</string>
+    <string name="bluetoothfragmentv2_connect">Connect to pump</string>
+    <string name="bluetoothfragmentv2_thread">SerialThread status</string>
+    <string name="bluetooththread_running">Running</string>
+    <string name="bluetooththread_stopped">Stopped</string>
 
 </resources>
 

@@ -280,13 +280,13 @@
                 </LinearLayout>
 
             <View
-                android:layout_width="fill_parent"
-                android:layout_height="2dip"
-                android:layout_marginBottom="5dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp"
-                android:layout_marginTop="5dp"
-                android:background="@color/listdelimiter" />
+            android:layout_width="fill_parent"
+            android:layout_height="2dip"
+            android:layout_marginBottom="5dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="5dp"
+            android:background="@color/listdelimiter" />
 
             <!-- Bluetooth status -->
             <LinearLayout
@@ -328,6 +328,52 @@
             <View
                 android:layout_width="fill_parent"
                 android:layout_height="2dip"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_marginTop="5dp"
+                android:background="@color/listdelimiter" />
+
+            <!-- SerialThread status -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:paddingRight="5dp"
+                    android:text="@string/bluetoothfragmentv2_thread"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="5dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0"
+                    android:gravity="center_horizontal"
+                    android:paddingEnd="2dp"
+                    android:paddingStart="2dp"
+                    android:text="@string/bluetoothfragment_seperator"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/bluetoothpump_threadstatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="start"
+                    android:paddingLeft="5dp"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="2dip"
                 android:layout_marginBottom="20dp"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="20dp"
@@ -337,7 +383,7 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/bluetoothfragment_revive"
+                android:text="@string/bluetoothfragmentv2_connect"
                 android:id="@+id/service_connect" />
 
         </LinearLayout>
