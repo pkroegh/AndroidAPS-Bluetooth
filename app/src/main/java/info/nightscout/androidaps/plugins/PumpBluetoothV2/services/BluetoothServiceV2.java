@@ -50,7 +50,7 @@ public class BluetoothServiceV2 extends Service {
     protected BluetoothDevice mBTDevice;
     public String mDevName;
 
-    public boolean mKeepDeviceConnected = true; //When true, device should always be connected
+    private Boolean mKeepDeviceConnected = true; //When true, device should always be connected
     protected Boolean mConnectionInProgress = false;
     protected Boolean mConnectionFailed = false;
     private boolean mConfirmed;
@@ -62,10 +62,8 @@ public class BluetoothServiceV2 extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        log.debug("Service is at: onCreate");
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); //Check bluetooth adapter availability
         if (mBluetoothAdapter == null) {
-            log.error("No default Bluetooth adapter. Device likely does not support bluetooth.");
             MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
             return;
         }
@@ -77,9 +75,7 @@ public class BluetoothServiceV2 extends Service {
 
     private void activateBluetooth(){
         if (mBluetoothAdapter.isEnabled()) { //Confirms that bluetooth is enabled
-            log.debug("Bluetooth Adapter is enabled.");
         } else {
-            log.debug("Bluetooth adapter not enabled. Enabling.");
             mBluetoothAdapter.enable(); //Starting Bluetooth
         }
     }
@@ -97,6 +93,7 @@ public class BluetoothServiceV2 extends Service {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
                 log.debug("Device was disconnected: " + device.getName());//Device was disconnected
+                //alertUser();
                 if (mKeepDeviceConnected) { //Connection dropped, reconnect!
                     MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
                     if (mConnectionInProgress){return;}
@@ -109,6 +106,23 @@ public class BluetoothServiceV2 extends Service {
         }
     };
 
+    /*
+    private void alertUser(){ //Alert user when bluetooth device disconnects
+        AlertDialog alertDialog = new AlertDialog.Builder(getApplicationContext()).create();
+        alertDialog.setTitle(MainApp.sResources.getString(R.string.bluetoothalert_disconnected));
+        alertDialog.setMessage(MainApp.sResources.getString(R.string.bluetoothalert_client_lost));
+        alertDialog.setIcon(R.drawable.ic_notification);
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, MainApp.sResources.getString(R.string.ok),
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        alertDialog.show();
+
+    }
+    */
+
     private void registerBus() {
         try {
             MainApp.bus().unregister(this);
@@ -120,27 +134,21 @@ public class BluetoothServiceV2 extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        log.debug("Service is at: onBind");
         return mBinder;
     }
 
     @Override
     public void onRebind(Intent intent) {
-        log.debug("Service is at: onRebind");
         super.onRebind(intent);
     }
 
-    /*
     @Override
     public boolean onUnbind(Intent intent) {
-        log.debug("Service is at: onUnbind");
         return true;
     }
-    */
 
     @Override
     public void onDestroy() {
-        log.debug("Service is at: onDestroy");
         unregisterReceiver(BluetoothReceiver);
         if (mConnectedThread != null){
             mConnectedThread.disconnect();

@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 ext {
-    supportLibraryVersion = "25.2.0"
+    supportLibraryVersion = "23.0.1"
     wearableVersion = "2.0.1"    
 }
 
@@ -27,7 +27,7 @@ def generateGitBuild = { ->
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 26
     buildToolsVersion '28.0.3'
 
     defaultConfig {

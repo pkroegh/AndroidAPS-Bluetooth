@@ -614,4 +614,95 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
         return "Bluetooth Pump V2";
     }
 
+    public boolean isLoopEnabled() {
+        return true;
+    }
+
+    public boolean isClosedModeEnabled() {
+        return true;
+    }
+
+    public boolean isAutosensModeEnabled() {
+        return true;
+    }
+
+    public boolean isAMAModeEnabled() {
+        return true;
+    }
+
+    public boolean isSMBModeEnabled() {
+        return true;
+    }
+
+
+
+    /*
+    @SuppressWarnings("PointlessBooleanExpression")
+    @Override
+    public Double applyBasalConstraints(Double absoluteRate) {
+        double origAbsoluteRate = absoluteRate;
+        if (pump != null) {
+            if (absoluteRate > pump.maxBasal) {
+                absoluteRate = pump.maxBasal;
+                if (Config.logConstraintsChanges && origAbsoluteRate != Constants.basalAbsoluteOnlyForCheckLimit)
+                    log.debug("Limiting rate " + origAbsoluteRate + "U/h by pump constraint to " + absoluteRate + "U/h");
+            }
+        }
+        return absoluteRate;
+    }
+
+    @SuppressWarnings("PointlessBooleanExpression")
+    @Override
+    public Integer applyBasalConstraints(Integer percentRate) {
+        Integer origPercentRate = percentRate;
+        if (percentRate < 0) percentRate = 0;
+        if (percentRate > getPumpDescription().maxTempPercent)
+            percentRate = getPumpDescription().maxTempPercent;
+        if (!Objects.equals(percentRate, origPercentRate) && Config.logConstraintsChanges && !Objects.equals(origPercentRate, Constants.basalPercentOnlyForCheckLimit))
+            log.debug("Limiting percent rate " + origPercentRate + "% to " + percentRate + "%");
+        return percentRate;
+    }
+
+    @SuppressWarnings("PointlessBooleanExpression")
+    @Override
+    public Double applyBolusConstraints(Double insulin) {
+        double origInsulin = insulin;
+        if (pump != null) {
+            if (insulin > pump.maxBolus) {
+                insulin = pump.maxBolus;
+                if (Config.logConstraintsChanges && origInsulin != Constants.bolusOnlyForCheckLimit)
+                    log.debug("Limiting bolus " + origInsulin + "U by pump constraint to " + insulin + "U");
+            }
+        }
+        return insulin;
+    }
+
+    @Override
+    public Integer applyCarbsConstraints(Integer carbs) {
+        return carbs;
+    }
+
+    @Override
+    public Double applyMaxIOBConstraints(Double maxIob) {
+        return maxIob;
+    }
+
+    @Nullable
+    @Override
+    public ProfileStore getProfile() {
+        if (pump.lastSettingsRead == 0)
+            return null; // no info now
+        return pump.createConvertedProfile();
+    }
+
+    @Override
+    public String getUnits() {
+        return pump.getUnits();
+    }
+
+    @Override
+    public String getProfileName() {
+        return pump.createConvertedProfileName();
+    }
+    */
 }

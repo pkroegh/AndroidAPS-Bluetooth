@@ -903,5 +903,9 @@
     <string name="bluetooththread_running">Running</string>
     <string name="bluetooththread_stopped">Stopped</string>
 
+    <!-- BluetoothPumpV2 alert -->
+    <string name="bluetoothalert_disconnected">Connection lost</string>
+    <string name="bluetoothalert_client_lost">Connection to client lost</string>
+
 </resources>
 

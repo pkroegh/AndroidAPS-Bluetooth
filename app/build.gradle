@@ -20,7 +20,7 @@ dependencies {
 }
 
 ext {
-    supportLibraryVersion = "27.1.1"
+    supportLibraryVersion = "27.0.2"
     ormLiteVersion = "4.46"
     powermockVersion = "1.7.3"
     dexmakerVersion = "1.2"

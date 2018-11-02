@@ -155,12 +155,13 @@
         <!-- Bluetooth pump service -->
         <service
             android:name=".plugins.PumpBluetooth.services.BluetoothService"
+            android:enabled="false"
             android:exported="false" />
 
         <service
             android:name=".plugins.PumpBluetoothV2.services.BluetoothServiceV2"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
 
         <meta-data
             android:name="io.fabric.ApiKey"

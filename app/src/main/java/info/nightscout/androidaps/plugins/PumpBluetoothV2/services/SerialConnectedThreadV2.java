@@ -1,7 +1,6 @@
 package info.nightscout.androidaps.plugins.PumpBluetoothV2.services;
 
 import android.bluetooth.BluetoothSocket;
-import android.os.SystemClock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
-
-import info.nightscout.utils.NSUpload;
 
 public class SerialConnectedThreadV2 extends Thread{
     private static Logger log = LoggerFactory.getLogger(SerialConnectedThreadV2.class);
@@ -23,7 +20,6 @@ public class SerialConnectedThreadV2 extends Thread{
     private byte[] mReadBuff = new byte[0];
 
     private boolean mKeepRunning = true;
-    private boolean mWaitForConformation = false;
 
     public SerialConnectedThreadV2(BluetoothSocket rfcommSocket) {
         super();
@@ -40,6 +36,8 @@ public class SerialConnectedThreadV2 extends Thread{
 
     @Override
     public final void run() {
+
+        /*
         try {
             while (mKeepRunning) {
                 int availableBytes = mInputStream.available();
@@ -58,6 +56,7 @@ public class SerialConnectedThreadV2 extends Thread{
                     } else {
                         String stringMessage = new String(extractedBuff, "UTF-8");
 
+
                         if (stringMessage.contains("OK")){
 
                         } else if (stringMessage.contains("pumpStatus")){
@@ -65,9 +64,11 @@ public class SerialConnectedThreadV2 extends Thread{
                             log.debug("Got message back from pump!");
 
                             NSUpload.uploadDeviceStatus();
-                        } else {
-
                         }
+
+
+
+
                     }
                 }
             }
@@ -76,7 +77,7 @@ public class SerialConnectedThreadV2 extends Thread{
                 log.error("Thread exception: ", e);
             mKeepRunning = false;
         }
-        //disconnect();
+        */
     }
 
     void appendToBuffer(byte[] newData, int gotBytes) {
@@ -116,45 +117,22 @@ public class SerialConnectedThreadV2 extends Thread{
         } catch (Exception e) {
             log.error("sendMessage write exception: ", e);
         }
-
-        if(mWaitForConformation){
-            log.error("Unable to confirm");
-            /*
-            synchronized (message) {
-                try {
-                    message.wait(5000);
-                } catch (InterruptedException e) {
-                    log.error("sendMessage InterruptedException", e);
-                }
-            }
-
-            SystemClock.sleep(200);
-            if (!message.received) {
-                log.warn("Reply not received " + message.getMessageName());
-                if (message.getCommand() == 0xF0F1) {
-                    DanaRPump.getInstance().isNewPump = false;
-                    log.debug("Old firmware detected");
-                }
-            }
-            */
-        }
     }
 
     public void disconnect() {
         mKeepRunning = false;
         try {
             mInputStream.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {log.error("Thread exception: ", e);}
         try {
             mOutputStream.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {log.error("Thread exception: ", e);}
         try {
             mRfCommSocket.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {log.error("Thread exception: ", e);}
         try {
             System.runFinalization();
-        } catch (Exception e) {}
+        } catch (Exception e) {log.error("Thread exception: ", e);}
         log.debug("Stopping SerialConnectedThread");
     }
-
 }

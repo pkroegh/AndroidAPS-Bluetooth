@@ -111,23 +111,23 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                             if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
                                 vPumpName.setText(bluetoothPump.sExecutionService.mDevName);
                                 if (bluetoothPump.sExecutionService.isConnecting()) {
-                                    vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_connecting));
+                                    vBluetoothStatus.setText(R.string.bluetoothstatus_connecting);
                                 } else if (bluetoothPump.sExecutionService.isConnected()) {
-                                    vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_connected));
+                                    vBluetoothStatus.setText(R.string.bluetoothstatus_connected);
                                 } else if (bluetoothPump.sExecutionService.mBTSocket.isConnected()) {
-                                    vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_connected));
+                                    vBluetoothStatus.setText(R.string.bluetoothstatus_connected);
                                 } else {
-                                    vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_disconnected));
+                                    vBluetoothStatus.setText(R.string.bluetoothstatus_disconnected);
                                 }
                             }
                             if (bluetoothPump.sExecutionService.mConnectedThread != null) {
-                                vThreadStatus.setText(MainApp.sResources.getString(R.string.bluetooththread_running));
+                                vThreadStatus.setText(R.string.bluetooththread_running);
                             } else {
-                                vThreadStatus.setText(MainApp.sResources.getString(R.string.bluetooththread_stopped));
+                                vThreadStatus.setText(R.string.bluetooththread_stopped);
                             }
                         }
                     } else {
-                        vBluetoothStatus.setText(MainApp.sResources.getString(R.string.bluetoothstatus_invalid));
+                        vBluetoothStatus.setText(R.string.bluetoothstatus_invalid);
                     }
 
 
