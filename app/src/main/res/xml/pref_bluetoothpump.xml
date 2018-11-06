@@ -10,7 +10,7 @@
             android:title="@string/bluetooth_bt_name_title" />
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="bluetoothpump_uploadstatus"
             android:title="@string/bluetoothpump_uploadstatus_title" />
 

@@ -110,7 +110,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                         if (bluetoothPump.sExecutionService != null) {
                             if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
                                 vPumpName.setText(bluetoothPump.sExecutionService.mDevName);
-                                if (bluetoothPump.sExecutionService.isConnecting()) {
+                                if (bluetoothPump.sExecutionService != null && bluetoothPump.sExecutionService.isConnecting()) {
                                     vBluetoothStatus.setText(R.string.bluetoothstatus_connecting);
                                 } else if (bluetoothPump.sExecutionService.isConnected()) {
                                     vBluetoothStatus.setText(R.string.bluetoothstatus_connected);

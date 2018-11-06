@@ -278,7 +278,9 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
             sExecutionService.connect();
         } else {
             createService();
-            sExecutionService.connect();
+            if(sExecutionService != null){
+                sExecutionService.connect();
+            }
         }
         if (!Config.NSCLIENT && !Config.G5UPLOADER)
             NSUpload.uploadDeviceStatus();
@@ -322,18 +324,20 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
     @Override
     public double getBaseBasalRate() {
         Profile profile = MainApp.getConfigBuilder().getProfile();
-        if (sExecutionService != null && sExecutionService.isConnected() && profile.getBasal() != null){
-            String message = "getBaseBasalRate";
-            message = message.concat(" rate: ");
-            message = message.concat(Double.toString(profile.getBasal()));
-            sExecutionService.confirmedMessage("EnactPumpResult|" + message);
-        } else {
-            log.error("Service not running or connected!");
-        }
-        if (profile != null)
+        if (profile != null) {
+            if (sExecutionService != null && sExecutionService.isConnected() && profile.getBasal() != null) {
+                String message = "getBaseBasalRate";
+                message = message.concat(" rate: ");
+                message = message.concat(Double.toString(profile.getBasal()));
+                sExecutionService.confirmedMessage("EnactPumpResult|" + message);
+            } else {
+                log.error("Service not running or connected!");
+            }
             return profile.getBasal() != null ? profile.getBasal() : 0d;
-        else
+        }
+        else {
             return 0d;
+        }
     }
 
     @Override
@@ -559,7 +563,7 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
 
     @Override
     public JSONObject getJSONStatus() {
-        if (!SP.getBoolean("virtualpump_uploadstatus", false)) {
+        if (!SP.getBoolean("bluetoothpump_uploadstatus", true)) {
             return null;
         }
         JSONObject pump = new JSONObject();
