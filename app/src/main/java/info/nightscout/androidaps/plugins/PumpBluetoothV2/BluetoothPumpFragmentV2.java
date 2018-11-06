@@ -81,6 +81,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                 public void onClick(View v) {
                     BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
                     bluetoothPump.createService();
+                    bluetoothPump.connect("default");
                 }
             });
 

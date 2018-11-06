@@ -298,6 +298,7 @@ public class BluetoothPumpPluginV2 implements PluginBase, PumpInterface {
     @Override
     public void getPumpStatus() {
         lastDataTime = new Date();
+        NSUpload.uploadDeviceStatus();
     }
 
     @Override
