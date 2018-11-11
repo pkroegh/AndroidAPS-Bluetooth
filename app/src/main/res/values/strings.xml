@@ -907,5 +907,10 @@
     <string name="bluetoothalert_disconnected">Connection lost</string>
     <string name="bluetoothalert_client_lost">Connection to client lost</string>
 
+    <!-- BluetoothPumpV2 keys -->
+    <string name="key_bluetoothpump_uploadstatus" translatable="false">bluetoothpump_uploadstatus</string>
+    <string name="key_bluetoothpump_keepalive" translatable="false">bluetoothpump_keepalive</string>
+    <string name="pref_keepalive">Keep bluetooth pump connected</string>
+
 </resources>
 

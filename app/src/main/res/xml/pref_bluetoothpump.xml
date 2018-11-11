@@ -18,6 +18,11 @@
             android:defaultValue="false"
             android:key="@string/key_bluetooth_useextended"
             android:title="@string/bluetooth_useextended_title" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/key_bluetoothpump_keepalive"
+            android:title="@string/pref_keepalive" />
     </PreferenceCategory>
 
 </PreferenceScreen>
