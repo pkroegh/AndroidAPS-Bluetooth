@@ -4,7 +4,7 @@
         android:key="bluetoothpump"
         android:title="@string/bluetoothpump_settings">
 
-        <info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothDevicePreference
+        <info.nightscout.androidaps.plugins.PumpBluetoothV2.BluetoothDevicePreference
             android:dialogTitle="@string/bluetooth_bt_name_title"
             android:key="@string/key_bluetooth_bt_name"
             android:title="@string/bluetooth_bt_name_title" />
@@ -20,9 +20,9 @@
             android:title="@string/bluetooth_useextended_title" />
 
         <SwitchPreference
-            android:defaultValue="true"
-            android:key="@string/key_bluetoothpump_keepalive"
-            android:title="@string/pref_keepalive" />
+            android:defaultValue="false"
+            android:key="@string/key_bluetoothpump_ignorepump"
+            android:title="@string/pref_ignorepump" />
     </PreferenceCategory>
 
 </PreferenceScreen>

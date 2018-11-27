@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.squareup.otto.Subscribe;
@@ -55,7 +56,6 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
         }
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -80,8 +80,15 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                 @Override
                 public void onClick(View v) {
                     BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
-                    bluetoothPump.createService();
-                    bluetoothPump.connect("default");
+                    if(bluetoothPump.isConnected()){
+                        Toast.makeText(MainApp.instance().getApplicationContext(),"Already connected",Toast.LENGTH_SHORT).show();
+                    } else if (bluetoothPump.isConnecting()) {
+                        Toast.makeText(MainApp.instance().getApplicationContext(),"Connecting...",Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainApp.instance().getApplicationContext(),"Starting...",Toast.LENGTH_SHORT).show();
+                        bluetoothPump.createService();
+                        bluetoothPump.connect("default");
+                    }
                 }
             });
 
@@ -106,8 +113,13 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                 @Override
                 public void run() {
                     BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
+                    bluetoothPump.loadIgnoreStatus();
                     //Bluetooth service and bluetooth related GUI
-                    if (BluetoothAdapter.getDefaultAdapter() != null){
+                    if (bluetoothPump.ignorePump){
+                        vPumpName.setText(R.string.ignorepump_faking);
+                        vBluetoothStatus.setText(R.string.ignorepump_faking);
+                        vThreadStatus.setText(R.string.ignorepump_faking);
+                    } else if (BluetoothAdapter.getDefaultAdapter() != null){
                         if (bluetoothPump.sExecutionService != null) {
                             if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
                                 vPumpName.setText(bluetoothPump.sExecutionService.mDevName);
@@ -130,7 +142,6 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                     } else {
                         vBluetoothStatus.setText(R.string.bluetoothstatus_invalid);
                     }
-
 
                     basaBasalRateView.setText(bluetoothPump.getBaseBasalRate() + "U");
                     if (MainApp.getConfigBuilder().isTempBasalInProgress()) {

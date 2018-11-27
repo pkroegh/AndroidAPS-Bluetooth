@@ -345,15 +345,15 @@ public class BluetoothServiceV2 extends Service {
     }
 
     public void disconnect() {
-        //if (mConnectedThread != null) {
-        //    mConnectedThread.disconnect();
-        //}
+        if (mConnectedThread != null) {
+            mConnectedThread.disconnect();
+        }
     }
 
     public void stopConnecting() {
-        //if (mConnectedThread != null) {
-        //    mConnectedThread.disconnect();
-        //}
+        if (mConnectedThread != null) {
+            mConnectedThread.disconnect();
+        }
     }
 
     @Subscribe

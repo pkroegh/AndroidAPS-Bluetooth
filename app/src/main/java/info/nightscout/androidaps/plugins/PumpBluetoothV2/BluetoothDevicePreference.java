@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetooth;
+package info.nightscout.androidaps.plugins.PumpBluetoothV2;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -32,5 +32,4 @@ public class BluetoothDevicePreference extends ListPreference {
     public BluetoothDevicePreference(Context context) {
         this(context, null);
     }
-
 }

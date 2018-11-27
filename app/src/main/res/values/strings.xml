@@ -862,17 +862,7 @@
     <string name="combo_reservoir_level_insufficient_for_bolus">Not enough insulin for bolus left in reservoir</string>
     <string name="extendedbolusdeliveryerror">Extended bolus delivery error</string>
 
-    <!-- BluetoothPump strings -->
-    <string name="bluetoothpump">Bluetooth pump</string>
-    <string name="bluetoothpump_shortname">BPUMP</string>
-    <string name="bluetoothpump_settings">Bluetooth pump settings</string>
-    <string name="bluetooth_bt_name_title">Bluetooth pump device</string>
-    <string name="key_bluetooth_bt_name" translatable="false">bluetooth_bt_name</string>
-    <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
-    <string name="bluetooth_useextended_title">Use extended bolus for >200%</string>
-    <string name="key_bluetooth_useextended" translatable="false">bluetooth_useextended</string>
-    <string name="key_bluetoothprofile_dia" translatable="false">bluetoothprofilee_dia</string>
-
+    <!-- BluetoothPumpV2 strings -->
     <string name="bluetoothservice_stopped">Not running!</string> <!-- Service it not running -->
     <string name="bluetoothservice_running">Running, not bound</string> <!-- Service it running but not bound -->
     <string name="bluetoothservice_bound">Bound and running</string> <!-- Service it running and bound -->
@@ -909,8 +899,16 @@
 
     <!-- BluetoothPumpV2 keys -->
     <string name="key_bluetoothpump_uploadstatus" translatable="false">bluetoothpump_uploadstatus</string>
-    <string name="key_bluetoothpump_keepalive" translatable="false">bluetoothpump_keepalive</string>
-    <string name="pref_keepalive">Keep pump connected</string>
+    <string name="key_bluetoothpump_ignorepump" translatable="false">bluetoothpump_ignorepump</string>
+    <string name="key_bluetooth_bt_name" translatable="false">bluetooth_bt_name</string>
+    <string name="key_bluetooth_useextended" translatable="false">bluetooth_useextended</string>
+    <string name="key_bluetoothprofile_dia" translatable="false">bluetoothprofilee_dia</string>
+    <string name="pref_ignorepump">Ignore pump connection</string>
+    <string name="bluetoothpump_settings">Bluetooth pump settings</string>
+    <string name="bluetooth_bt_name_title">Bluetooth pump device</string>
+    <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
+    <string name="bluetooth_useextended_title">Use extended bolus for >200%</string>
+    <string name="ignorepump_faking">Faking pump connecting</string>
 
 </resources>
 
