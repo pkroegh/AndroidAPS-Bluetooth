@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetoothV2.services;
+package info.nightscout.androidaps.plugins.PumpBluetooth.services;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -26,26 +26,27 @@ import java.util.UUID;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.db.Treatment;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
-import info.nightscout.androidaps.plugins.PumpBluetoothV2.events.EventBluetoothPumpV2UpdateGui;
+import info.nightscout.androidaps.interfaces.Constraint;
+import info.nightscout.androidaps.plugins.PumpBluetooth.BluetoothPumpPlugin;
+import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpUpdateGui;
 import info.nightscout.utils.HardLimits;
 import info.nightscout.utils.SP;
 import info.nightscout.utils.ToastUtils;
 
-public class BluetoothServiceV2 extends Service {
-    protected Logger log = LoggerFactory.getLogger(BluetoothServiceV2.class);
+public class BluetoothService extends Service {
+    protected Logger log = LoggerFactory.getLogger(BluetoothService.class);
 
-    protected IBinder mBinder = new BluetoothServiceV2.ServiceBinder();
+    protected IBinder mBinder = new BluetoothService.ServiceBinder();
 
     public ArrayAdapter<String> mBTArrayAdapter;
 
     public static final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // "random" unique identifier
 
     public BluetoothAdapter mBluetoothAdapter; //Bluetooth adapter connection
-    public SerialConnectedThreadV2 mConnectedThread; // bluetooth background worker thread to send and receive data
+    public info.nightscout.androidaps.plugins.PumpBluetooth.services.SerialConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
     public BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
     protected BluetoothDevice mBTDevice;
     public String mDevName;
@@ -57,14 +58,14 @@ public class BluetoothServiceV2 extends Service {
 
     private static String GOT_OK = "BluetoothService.GOT_OK";
 
-    protected Treatment mBolusingTreatment = null;
+    //protected Treatment mBolusingTreatment = null;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); //Check bluetooth adapter availability
         if (mBluetoothAdapter == null) {
-            MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
+            MainApp.bus().post(new EventBluetoothPumpUpdateGui());
             return;
         }
         mBTArrayAdapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1);
@@ -93,35 +94,19 @@ public class BluetoothServiceV2 extends Service {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
                 log.debug("Device was disconnected: " + device.getName());//Device was disconnected
-                //alertUser();
+                BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
+                bluetoothPump.pumpNotConnected(true);
                 if (mKeepDeviceConnected) { //Connection dropped, reconnect!
-                    MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
+                    MainApp.bus().post(new EventBluetoothPumpUpdateGui());
                     if (mConnectionInProgress){return;}
                     connect();
                 }
             } else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
                 log.debug("Successfully connected to: " + device.getName());
-                MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
+                MainApp.bus().post(new EventBluetoothPumpUpdateGui());
             }
         }
     };
-
-    /*
-    private void alertUser(){ //Alert user when bluetooth device disconnects
-        AlertDialog alertDialog = new AlertDialog.Builder(getApplicationContext()).create();
-        alertDialog.setTitle(MainApp.sResources.getString(R.string.bluetoothalert_disconnected));
-        alertDialog.setMessage(MainApp.sResources.getString(R.string.bluetoothalert_client_lost));
-        alertDialog.setIcon(R.drawable.ic_notification);
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, MainApp.sResources.getString(R.string.ok),
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-        alertDialog.show();
-
-    }
-    */
 
     private void registerBus() {
         try {
@@ -185,7 +170,7 @@ public class BluetoothServiceV2 extends Service {
     public boolean confirmedMessage(String message){
         mConfirmed = false;
         if (mConnectedThread == null){
-            log.error("mConnectedThread is null on confirmedMessage at BluetoothServiceV2");
+            log.error("mConnectedThread is null on confirmedMessage at BluetoothService");
             return false;
         }
         //MainApp.instance().getApplicationContext().registerReceiver(confirmTransmit, new IntentFilter(BluetoothService.GOT_OK));
@@ -233,7 +218,7 @@ public class BluetoothServiceV2 extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (BluetoothServiceV2.GOT_OK.equals(action)){
+            if (BluetoothService.GOT_OK.equals(action)){
                 log.debug("Got conformation from Bluetooth device");
                 mConfirmed = true;
             }
@@ -241,8 +226,8 @@ public class BluetoothServiceV2 extends Service {
     };
 
     public class ServiceBinder extends Binder {
-        public BluetoothServiceV2 getService() {
-            return BluetoothServiceV2.this;
+        public BluetoothService getService() {
+            return BluetoothService.this;
         }
     }
 
@@ -281,15 +266,15 @@ public class BluetoothServiceV2 extends Service {
                     }
                 }
                 if (!mConnectionFailed) {
-                    mConnectedThread = new SerialConnectedThreadV2(mBTSocket);
+                    mConnectedThread = new info.nightscout.androidaps.plugins.PumpBluetooth.services.SerialConnectedThread(mBTSocket);
                     if (mConnectedThread.getState() == Thread.State.NEW){
                         mConnectedThread.start();
                     }
                     MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTED, 0));
-                    MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
+                    MainApp.bus().post(new EventBluetoothPumpUpdateGui());
                 } else {
                     log.debug("Couldn't connect to client");
-                    MainApp.bus().post(new EventBluetoothPumpV2UpdateGui());
+                    MainApp.bus().post(new EventBluetoothPumpUpdateGui());
                     SystemClock.sleep(5000);
                     connect();
                 }
@@ -384,7 +369,7 @@ public class BluetoothServiceV2 extends Service {
         // HARDCODED LIMITS
         if (durationInHalfHours < 1) durationInHalfHours = 1;
         if (durationInHalfHours > 16) durationInHalfHours = 16;
-        insulin = MainApp.getConfigBuilder().applyBolusConstraints(insulin);
+        insulin = MainApp.getConstraintChecker().applyBolusConstraints(new Constraint<>(insulin)).value();
         if (insulin < 0d) insulin = 0d;
         if (insulin > HardLimits.maxBolus()) insulin = HardLimits.maxBolus();
         String message = "extendedBolus|" + "insulin=" + Double.toString((((int) (insulin * 100)) / 100d)) + "U|durationInHours=" + Integer.toString(durationInHalfHours);

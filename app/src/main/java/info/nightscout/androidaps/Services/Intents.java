@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.Services;
+package info.nightscout.androidaps.services;
 
 public interface Intents {
     // NSClient -> App
@@ -37,6 +37,8 @@ public interface Intents {
     String EXTRA_SENSOR_BATTERY = "com.eveningoutpost.dexdrip.Extras.SensorBattery";
     String EXTRA_TIMESTAMP = "com.eveningoutpost.dexdrip.Extras.Time";
     String EXTRA_RAW = "com.eveningoutpost.dexdrip.Extras.Raw";
+    String XDRIP_DATA_SOURCE_DESCRIPTION = "com.eveningoutpost.dexdrip.Extras.SourceDesc";
+
 
     String ACTION_NEW_BG_ESTIMATE_NO_DATA = "com.eveningoutpost.dexdrip.BgEstimateNoData";
 
@@ -47,4 +49,6 @@ public interface Intents {
     String GLIMP_BG = "it.ct.glicemia.ACTION_GLUCOSE_MEASURED";
 
     String DEXCOMG5_BG = "com.dexcom.cgm.DATA";
+
+    String POCTECH_BG = "com.china.poctech.data";
 }

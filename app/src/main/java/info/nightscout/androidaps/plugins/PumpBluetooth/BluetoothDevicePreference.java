@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetoothV2;
+package info.nightscout.androidaps.plugins.PumpBluetooth;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;

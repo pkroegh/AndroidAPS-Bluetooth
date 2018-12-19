@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
 
 ext {
-    supportLibraryVersion = "23.0.1"
-    wearableVersion = "2.0.1"    
+    wearableVersion = "2.0.1"
 }
 
 def generateGitBuild = { ->
 
-    StringBuilder stringBuilder = new StringBuilder()
+    StringBuilder stringBuilder = new StringBuilder();
     stringBuilder.append('"')
     try {
         def stdout = new ByteArrayOutputStream()
@@ -27,13 +26,12 @@ def generateGitBuild = { ->
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 27
 
     defaultConfig {
         applicationId "info.nightscout.androidaps"
-        minSdkVersion 20
-        targetSdkVersion 26
+        minSdkVersion 23
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0.2"
         buildConfigField "String", "BUILDVERSION", generateGitBuild()
@@ -45,8 +43,34 @@ android {
         }
     }
 
-    publishNonDefault true
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 
+    productFlavors {
+        flavorDimensions "standard"
+        full {
+            applicationId "info.nightscout.androidaps"
+            dimension "standard"
+            versionName version
+        }
+        pumpcontrol {
+            applicationId "info.nightscout.androidaps"
+            dimension "standard"
+            versionName version
+        }
+        nsclient {
+            applicationId "info.nightscout.nsclient"
+            dimension "standard"
+            versionName version + "-nsclient"
+        }
+        nsclient2 {
+            applicationId "info.nightscout.nsclient2"
+            dimension "standard"
+            versionName version + "-nsclient"
+        }
+    }
 }
 
 allprojects {
@@ -58,8 +82,7 @@ allprojects {
     }
 }
 
-// Updated to meet new criteria for adding dependencies
-// Replaced compile with implementation
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation files("libs/hellocharts-library-1.5.5.jar")
@@ -68,6 +91,7 @@ dependencies {
     implementation "com.google.android.support:wearable:${wearableVersion}"
     implementation "com.google.android.gms:play-services-wearable:7.3.0"
     implementation(name:"ustwo-clockwise-debug", ext:"aar")
-    implementation "com.android.support:support-v4:${supportLibraryVersion}"
+    implementation "com.android.support:support-v4:27.0.1"
+    implementation 'com.android.support:wear:27.0.1'
     implementation "me.denley.wearpreferenceactivity:wearpreferenceactivity:0.5.0"
 }

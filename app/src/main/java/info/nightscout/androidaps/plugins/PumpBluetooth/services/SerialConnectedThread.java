@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetoothV2.services;
+package info.nightscout.androidaps.plugins.PumpBluetooth.services;
 
 import android.bluetooth.BluetoothSocket;
 
@@ -10,8 +10,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-public class SerialConnectedThreadV2 extends Thread{
-    private static Logger log = LoggerFactory.getLogger(SerialConnectedThreadV2.class);
+public class SerialConnectedThread extends Thread{
+    private static Logger log = LoggerFactory.getLogger(SerialConnectedThread.class);
 
     private InputStream mInputStream = null;
     private OutputStream mOutputStream = null;
@@ -21,7 +21,7 @@ public class SerialConnectedThreadV2 extends Thread{
 
     private boolean mKeepRunning = true;
 
-    public SerialConnectedThreadV2(BluetoothSocket rfcommSocket) {
+    public SerialConnectedThread(BluetoothSocket rfcommSocket) {
         super();
 
         mRfCommSocket = rfcommSocket;

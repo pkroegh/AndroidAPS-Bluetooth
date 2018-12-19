@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetoothV2;
+package info.nightscout.androidaps.plugins.PumpBluetooth;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -20,11 +20,15 @@ import org.slf4j.LoggerFactory;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.db.ExtendedBolus;
+import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
-import info.nightscout.androidaps.plugins.PumpBluetoothV2.events.EventBluetoothPumpV2UpdateGui;
+import info.nightscout.androidaps.plugins.PumpBluetooth.events.EventBluetoothPumpUpdateGui;
+import info.nightscout.androidaps.plugins.PumpCommon.defs.PumpType;
+import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 
-public class BluetoothPumpFragmentV2 extends SubscriberFragment {
-    private static Logger log = LoggerFactory.getLogger(BluetoothPumpFragmentV2.class);
+public class BluetoothPumpFragment extends SubscriberFragment {
+    private static Logger log = LoggerFactory.getLogger(BluetoothPumpFragment.class);
 
     TextView basaBasalRateView;
     TextView tempBasalView;
@@ -32,11 +36,11 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
     TextView batteryView;
     TextView reservoirView;
 
-    private Button bBluetoothConnect;
+    Button bBluetoothConnect;
 
-    private TextView vPumpName;
-    private TextView vBluetoothStatus;
-    private TextView vThreadStatus;
+    TextView vPumpName;
+    TextView vBluetoothStatus;
+    TextView vThreadStatus;
 
     private static Handler sLoopHandler = new Handler();
     private static Runnable sRefreshLoop = null;
@@ -60,7 +64,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         try {
-            View view = inflater.inflate(R.layout.bluetoothpumpv2_fragment, container, false);
+            View view = inflater.inflate(R.layout.bluetoothpump_fragment, container, false);
 
             vPumpName = view.findViewById(R.id.bluetoothpump_client);
             vBluetoothStatus = view.findViewById(R.id.bluetoothpump_bluetoothstatus);
@@ -79,7 +83,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
             bBluetoothConnect.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
+                    BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
                     if(bluetoothPump.isConnected()){
                         Toast.makeText(MainApp.instance().getApplicationContext(),"Already connected",Toast.LENGTH_SHORT).show();
                     } else if (bluetoothPump.isConnecting()) {
@@ -101,7 +105,7 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
     }
 
     @Subscribe
-    public void onStatusEvent(final EventBluetoothPumpV2UpdateGui ev) {
+    public void onStatusEvent(final EventBluetoothPumpUpdateGui ev) {
         updateGUI();
     }
 
@@ -112,13 +116,13 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    BluetoothPumpPluginV2 bluetoothPump = BluetoothPumpPluginV2.getPlugin();
+                    BluetoothPumpPlugin bluetoothPump = BluetoothPumpPlugin.getPlugin();
                     bluetoothPump.loadIgnoreStatus();
                     //Bluetooth service and bluetooth related GUI
                     if (bluetoothPump.ignorePump){
-                        vPumpName.setText(R.string.ignorepump_faking);
-                        vBluetoothStatus.setText(R.string.ignorepump_faking);
-                        vThreadStatus.setText(R.string.ignorepump_faking);
+                        vPumpName.setText(R.string.bluetoothpump_faking);
+                        vBluetoothStatus.setText(R.string.bluetoothpump_faking);
+                        vThreadStatus.setText(R.string.bluetoothpump_faking);
                     } else if (BluetoothAdapter.getDefaultAdapter() != null){
                         if (bluetoothPump.sExecutionService != null) {
                             if (bluetoothPump.sExecutionService.mBluetoothAdapter != null) {
@@ -144,18 +148,22 @@ public class BluetoothPumpFragmentV2 extends SubscriberFragment {
                     }
 
                     basaBasalRateView.setText(bluetoothPump.getBaseBasalRate() + "U");
-                    if (MainApp.getConfigBuilder().isTempBasalInProgress()) {
-                        tempBasalView.setText(MainApp.getConfigBuilder().getTempBasalFromHistory(System.currentTimeMillis()).toStringFull());
+                    TemporaryBasal activeTemp = TreatmentsPlugin.getPlugin().getTempBasalFromHistory(System.currentTimeMillis());
+                    if (activeTemp != null) {
+                        tempBasalView.setText(activeTemp.toStringFull());
                     } else {
                         tempBasalView.setText("");
                     }
-                    if (MainApp.getConfigBuilder().isInHistoryExtendedBoluslInProgress()) {
-                        extendedBolusView.setText(MainApp.getConfigBuilder().getExtendedBolusFromHistory(System.currentTimeMillis()).toString());
+                    ExtendedBolus activeExtendedBolus = TreatmentsPlugin.getPlugin().getExtendedBolusFromHistory(System.currentTimeMillis());
+                    if (activeExtendedBolus != null) {
+                        extendedBolusView.setText(activeExtendedBolus.toString());
                     } else {
                         extendedBolusView.setText("");
                     }
-                    batteryView.setText(BluetoothPumpPluginV2.batteryPercent + "%");
-                    reservoirView.setText(BluetoothPumpPluginV2.reservoirInUnits + "U");
+                    batteryView.setText(bluetoothPump.batteryPercent + "%");
+                    reservoirView.setText(bluetoothPump.reservoirInUnits + "U");
+
+                    bluetoothPump.refreshConfiguration();
                 }
             });
     }
