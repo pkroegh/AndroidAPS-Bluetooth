@@ -1,5 +1,6 @@
 package info.nightscout.androidaps.plugins.PumpBluetooth.services;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,6 +13,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
+import android.os.Handler;
+import android.os.Message;
 
 import com.squareup.otto.Subscribe;
 
@@ -40,6 +44,8 @@ public class BluetoothService extends Service {
     protected Logger log = LoggerFactory.getLogger(BluetoothService.class);
 
     protected IBinder mBinder = new BluetoothService.ServiceBinder();
+
+    public static final int MESSAGE_READ=0;
 
     public ArrayAdapter<String> mBTArrayAdapter;
 
@@ -140,6 +146,63 @@ public class BluetoothService extends Service {
         }
         super.onDestroy();
     }
+
+    /*
+    @SuppressLint("HandlerLeak")
+    public Handler mHandler=new Handler()
+    {
+        @Override
+        public void handleMessage(Message msg_type) {
+            super.handleMessage(msg_type);
+
+            switch (msg_type.what){
+                case MESSAGE_READ:
+
+                    byte[] readbuf=(byte[])msg_type.obj;
+                    String string_recieved=new String(readbuf);
+
+                    //do some task based on recieved string
+
+                    log.debug("Got string from BluetoothDevice");
+                    log.debug("Content " + string_recieved);
+
+                    break;
+
+                case MESSAGE_WRITE:
+
+                    if(msg_type.obj!=null){
+                        ConnectedThread connectedThread=new ConnectedThread((BluetoothSocket)msg_type.obj);
+                        connectedThread.write(bluetooth_message.getBytes());
+
+                    }
+                    break;
+
+                case CONNECTED:
+                    Toast.makeText(getApplicationContext(),"Connected",Toast.LENGTH_SHORT).show();
+                    break;
+
+                case CONNECTING:
+                    Toast.makeText(getApplicationContext(),"Connecting...",Toast.LENGTH_SHORT).show();
+                    break;
+
+                case NO_SOCKET_FOUND:
+                    Toast.makeText(getApplicationContext(),"No socket found",Toast.LENGTH_SHORT).show();
+                    break;
+
+            }
+        }
+    };
+*/
+
+
+
+
+
+
+
+
+
+
 
     private void bluetoothMessage(byte buffer[], int size){ //Handle inbound bluetooth messages
         String readMessage = null;

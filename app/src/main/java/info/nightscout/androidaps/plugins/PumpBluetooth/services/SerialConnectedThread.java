@@ -1,6 +1,7 @@
 package info.nightscout.androidaps.plugins.PumpBluetooth.services;
 
 import android.bluetooth.BluetoothSocket;
+import android.os.SystemClock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,12 +11,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
+
 public class SerialConnectedThread extends Thread{
     private static Logger log = LoggerFactory.getLogger(SerialConnectedThread.class);
 
     private InputStream mInputStream = null;
     private OutputStream mOutputStream = null;
     private BluetoothSocket mRfCommSocket;
+
+    protected BluetoothService sExecutionService; //Service pointer
 
     private byte[] mReadBuff = new byte[0];
 
@@ -36,8 +41,6 @@ public class SerialConnectedThread extends Thread{
 
     @Override
     public final void run() {
-
-        /*
         try {
             while (mKeepRunning) {
                 int availableBytes = mInputStream.available();
@@ -55,29 +58,26 @@ public class SerialConnectedThread extends Thread{
 
                     } else {
                         String stringMessage = new String(extractedBuff, "UTF-8");
+                        log.debug("Got string from BluetoothDevice with content: " + stringMessage);
 
 
+
+                        /*
                         if (stringMessage.contains("OK")){
 
                         } else if (stringMessage.contains("pumpStatus")){
                             long now = System.currentTimeMillis();
                             log.debug("Got message back from pump!");
-
-                            NSUpload.uploadDeviceStatus();
                         }
-
-
-
-
+                        */
                     }
                 }
             }
         } catch (Exception e) {
             if (e.getMessage().contains("bt socket closed"))
                 log.error("Thread exception: ", e);
-            mKeepRunning = false;
+            //mKeepRunning = false;
         }
-        */
     }
 
     void appendToBuffer(byte[] newData, int gotBytes) {
@@ -91,7 +91,7 @@ public class SerialConnectedThread extends Thread{
     byte[] cutMessageFromBuffer() {
         if(mReadBuff != null && mReadBuff.length > 2){
             for(int index = 0; index < mReadBuff.length; index++){
-                if(mReadBuff[index] == 13 && mReadBuff[index + 1] == 10){ //Newline received, message end reached
+                if(mReadBuff[index] == 13){ //Newline received, message end reached
                     byte[] newMessageBuff = Arrays.copyOfRange(mReadBuff, 0,index + 1);
                     mReadBuff = Arrays.copyOfRange(mReadBuff, index + 1,mReadBuff.length);
                     return newMessageBuff;
