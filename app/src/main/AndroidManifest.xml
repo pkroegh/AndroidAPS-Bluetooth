@@ -192,9 +192,9 @@
             android:theme="@style/AppTheme" />
         <activity android:name=".plugins.Maintenance.activities.LogSettingActivity"></activity>
 
-        <!-- Bluetooth pump service -->
+        <!-- Medtronic ESP service -->
         <service
-            android:name=".plugins.PumpBluetooth.services.BluetoothService"
+            android:name=".plugins.PumpMedtronic.services.MedtronicService"
             android:enabled="true"
             android:exported="false" />
     </application>

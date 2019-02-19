@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.PumpBluetooth;
+package info.nightscout.androidaps.plugins.PumpMedtronic;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -8,6 +8,10 @@ import android.util.AttributeSet;
 
 import java.util.Set;
 import java.util.Vector;
+
+/*
+ *   Copy of DanaR BluetoothDevicePreference by mike
+ */
 
 public class BluetoothDevicePreference extends ListPreference {
 
@@ -32,4 +36,5 @@ public class BluetoothDevicePreference extends ListPreference {
     public BluetoothDevicePreference(Context context) {
         this(context, null);
     }
+
 }

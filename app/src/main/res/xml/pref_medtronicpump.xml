@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="@string/medtronicESP_settings">
+
+        <info.nightscout.androidaps.plugins.PumpMedtronic.BluetoothDevicePreference
+            android:dialogTitle="@string/medtronicESP_bt_name_title"
+            android:key="@string/key_medtronicESP_bt_name"
+            android:title="@string/medtronicESP_bt_name_title" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/key_medtronicESP_upload"
+            android:title="@string/medtronicESP_upload_title" />
+
+        <EditTextPreference
+            android:title="@string/medtronicESP_bwakeinterval_title"
+            android:key="@string/key_medtronicESP_wakeinterval"
+            android:defaultValue="1"
+            android:inputType="numberDecimal">
+        </EditTextPreference>
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_medtronicESP_fake"
+            android:title="@string/medtronicESP_fake_title" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

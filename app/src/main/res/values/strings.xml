@@ -52,6 +52,7 @@
     <string name="description_wear">Monitor and control AndroidAPS using your WearOS watch.</string>
     <string name="description_xdrip_status_line">Show information about your loop on your xDrip+ watchface.</string>
     <string name="description_sms_communicator">Remote control AndroidAPS using SMS commands.</string>
+    <string name="description_pump_medtronicESP_r">Pump integration for Medtronic pumps using an ESP microcontroller</string>
 
     <string name="objectives_button_start">Start</string>
     <string name="objectives_button_verify">Verify</string>
@@ -1224,6 +1225,21 @@
         <item quantity="other">%1$d minutes</item>
     </plurals>
 
+    <string name="medtronicESP">Medtronic ESP</string>
+    <string name="medtronicESP_shortname">DANA</string>
+
+    <string name="medtronicESP_settings">Medtronic ESP settings</string>
+    <string name="medtronicESP_bt_name_title">Medtronic ESP device</string>
+    <string name="key_medtronicESP_bt_name" translatable="false">medtronicESP_bt_name</string>
+    <string name="medtronicESP_upload_title">Upload ESP status to NS</string>
+    <string name="key_medtronicESP_upload" translatable="false">edtronicESP_upload</string>
+    <string name="medtronicESP_bwakeinterval_title">ESP wake time interval (min)</string>
+    <string name="key_medtronicESP_wakeinterval" translatable="false">medtronicESP_wakeinterval</string>
+    <string name="medtronicESP_fake_title">Fake ESP connected</string>
+    <string name="key_medtronicESP_fake" translatable="false">medtronicESP_fake</string>
+
+    <string name="medtronicESP_result_failed">Failed, service not connected</string>
+
     <!-- BluetoothPump strings -->
     <string name="bluetoothservice_stopped">Not running!</string> <!-- Service it not running -->
     <string name="bluetoothservice_running">Running, not bound</string> <!-- Service it running but not bound -->
@@ -1266,8 +1282,7 @@
     <string name="key_bluetooth_useextended" translatable="false">bluetooth_useextended</string>
     <string name="key_bluetoothprofile_dia" translatable="false">bluetoothprofilee_dia</string>
     <string name="pref_ignorepump">Ignore pump connection</string>
-    <string name="bluetoothpump_settings">Bluetooth pump settings</string>
-    <string name="bluetooth_bt_name_title">Bluetooth pump device</string>
+
     <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
     <string name="bluetooth_useextended_title">Use extended bolus for >200%</string>
     <string name="bluetoothpump_faking">Faking pump connecting</string>
