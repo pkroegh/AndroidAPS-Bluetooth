@@ -39,25 +39,34 @@ public class MedtronicPump {
     public static final String ESP_WAKE = "w";
     public static final String ESP_BASE = "b";
     public static final String ESP_TEMP = "t";
-    public static final String ESP_OKAY = "o";
+    public static final String ESP_SLEEP = "s";
 
     public static final String ANDROID_PING = "P";
-    public static final String ANDROID_BASE = "B";
-    public static final String ANDROID_TEMP = "T";
-    public static final String ANDROID_WAKE = "W";
+    public static final String ANDROID_BASE = "B=";
+    public static final String ANDROID_TEMP = "T=";
+    public static final String ANDROID_WAKE = "W=";
     public static final String ANDROID_SLEEP = "S";
 
     public static final String NEW_BT_MESSAGE = "NEW_BLUETOOTH_MESSAGE";
 
-    public static final int UNITS_MGDL = 0;
-    public static final int UNITS_MMOL = 1;
+    public String mDevName;
 
-    public static final int DELIVERY_PRIME = 0x01;
-    public static final int DELIVERY_STEP_BOLUS = 0x02;
-    public static final int DELIVERY_BASAL = 0x04;
-    public static final int DELIVERY_EXT_BOLUS = 0x08;
+    public boolean mantainingConnection = false;
+    public boolean mDeviceSleeping = false;
+    public boolean readyForNextMessage = false;
+    public boolean mFirstConnect = true;
+    public int wakeInterval = 0;
+    public long lastConnection = 0;
+    //public long lastConnTime = 0;
 
-    public static final String PROFILE_PREFIX = "DanaR-";
+    public double reservoirRemainingUnits = 50;
+    public int batteryRemaining;
+
+    public double baseBasal;
+    public double tempBasal;
+    public int tempBasalDuration;
+
+
 
     // v2 history entries
     public static final int TEMPSTART = 1;
@@ -76,7 +85,7 @@ public class MedtronicPump {
     public static final int CARBS = 14;
     public static final int PRIMECANNULA = 15;
 
-    public long lastConnection = 0;
+
     public long lastSettingsRead = 0;
 
     // Info
@@ -98,7 +107,7 @@ public class MedtronicPump {
     public boolean isEasyModeEnabled;
 
     // Status
-    public boolean pumpSuspended;
+
     public boolean calculatorEnabled;
     public double dailyTotalUnits;
     public double dailyTotalBolusUnits = 0; // RS only
@@ -110,14 +119,13 @@ public class MedtronicPump {
 
     public double iob;
 
-    public double reservoirRemainingUnits;
-    public int batteryRemaining;
+
 
     public boolean bolusBlocked;
     public long lastBolusTime = 0;
     public double lastBolusAmount;
 
-    public double currentBasal;
+
 
     public boolean isTempBasalInProgress;
     public int tempBasalPercent;

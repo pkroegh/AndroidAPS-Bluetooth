@@ -17,6 +17,7 @@ import java.util.UUID;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.PumpMedtronic.MedtronicPump;
 import info.nightscout.androidaps.plugins.PumpMedtronic.services.AbstractIOThread;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.utils.SP;
@@ -29,10 +30,6 @@ import info.nightscout.utils.ToastUtils;
 public abstract class AbstractMedtronicService extends Service {
     protected Logger log = LoggerFactory.getLogger(L.PUMP);
 
-    protected String mDevName;
-
-    protected Boolean mDeviceFirstConnect = true;
-
     protected BluetoothSocket mRfcommSocket;
     protected BluetoothDevice mBTDevice;
 
@@ -43,6 +40,8 @@ public abstract class AbstractMedtronicService extends Service {
     protected final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     public abstract void queueMessage(String message);
+    public abstract void connectESP();
+    public abstract void disconnectESP();
 
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -57,7 +56,7 @@ public abstract class AbstractMedtronicService extends Service {
     }
 
     public boolean isConnected() {
-        return mDeviceFirstConnect;
+        return !MedtronicPump.getInstance().mFirstConnect;
     }
 
     public boolean isConnecting() {
@@ -73,12 +72,13 @@ public abstract class AbstractMedtronicService extends Service {
     }
 
     protected void getBTSocketForSelectedPump() {
-        mDevName = SP.getString(MainApp.gs(R.string.key_medtronicESP_bt_name), "");
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.mDevName = SP.getString(MainApp.gs(R.string.key_medtronicESP_bt_name), "");
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter != null) {
             Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
             for (BluetoothDevice device : bondedDevices) {
-                if (mDevName.equals(device.getName())) {
+                if (pump.mDevName.equals(device.getName())) {
                     mBTDevice = device;
                     try {
                         mRfcommSocket = mBTDevice.createRfcommSocketToServiceRecord(BTMODULEUUID);
@@ -99,5 +99,4 @@ public abstract class AbstractMedtronicService extends Service {
     public boolean isBTConnected() {
         return mRfcommSocket != null && mRfcommSocket.isConnected();
     }
-
 }

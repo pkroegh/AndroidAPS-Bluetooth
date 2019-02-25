@@ -5,6 +5,6 @@ package info.nightscout.androidaps.plugins.PumpMedtronic.services;
  */
 
 public abstract class AbstractIOThread extends Thread {
-    public abstract void sendMessage(String message);
-    public abstract void disconnect();
+    protected abstract boolean sendMessage(String message);
+    protected abstract void disconnect();
 }

@@ -1,7 +1,5 @@
 package info.nightscout.androidaps.plugins.PumpMedtronic;
 
-import android.support.annotation.Nullable;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -10,40 +8,23 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 
 import info.nightscout.androidaps.BuildConfig;
-import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
-import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.androidaps.db.TemporaryBasal;
-import info.nightscout.androidaps.interfaces.Constraint;
-import info.nightscout.androidaps.interfaces.ConstraintsInterface;
-import info.nightscout.androidaps.interfaces.DanaRInterface;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
-import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.Overview.events.EventDismissNotification;
-import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRFragment;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgBolusStartWithSpeed;
-import info.nightscout.androidaps.plugins.PumpDanaR.comm.RecordTypes;
-import info.nightscout.androidaps.plugins.PumpDanaR.services.AbstractDanaRExecutionService;
 import info.nightscout.androidaps.plugins.PumpMedtronic.services.AbstractMedtronicService;
-import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.DecimalFormatter;
-import info.nightscout.utils.Round;
-import info.nightscout.utils.SP;
 
 /*
  *   Modified version of VirtualPumpPlugin and DanaRPlugin by mike
@@ -55,11 +36,11 @@ import info.nightscout.utils.SP;
 public abstract class AbstractMedtronicPlugin extends PluginBase implements PumpInterface {
     protected Logger log = LoggerFactory.getLogger(L.PUMP);
 
-    protected AbstractMedtronicService sMedtronicService;
+    AbstractMedtronicService sMedtronicService;
 
     public PumpDescription pumpDescription = new PumpDescription();
 
-    protected AbstractMedtronicPlugin() {
+    public AbstractMedtronicPlugin() {
         super(new PluginDescription()
                 .mainType(PluginType.PUMP)
                 .fragmentClass(MedtronicFragment.class.getName())
@@ -72,7 +53,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public boolean isSuspended() {
-        return MedtronicPump.getInstance().pumpSuspended;
+        return false;
     }
 
     @Override
@@ -123,7 +104,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         }
     }
 
-    private boolean serviceNotNull() {
+    public boolean serviceNotNull() {
         return sMedtronicService != null;
     }
 
@@ -146,7 +127,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     public double getBaseBasalRate() {
         Profile profile = ProfileFunctions.getInstance().getProfile();
         if (profile != null) {
-            MedtronicPump.getInstance().currentBasal = profile.getBasal();
+            MedtronicPump.getInstance().baseBasal = profile.getBasal();
             return profile.getBasal();
         } else {
             return 0d;
@@ -260,7 +241,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         JSONObject extended = new JSONObject();
         try {
             battery.put("percent", pump.batteryRemaining);
-            status.put("status", pump.pumpSuspended ? "suspended" : "normal");
+            status.put("status", pump.mDeviceSleeping ? "suspended" : "normal");
             status.put("timestamp", DateUtil.toISOString(pump.lastConnection));
             extended.put("Version", BuildConfig.VERSION_NAME + "-" + BuildConfig.BUILDVERSION);
             extended.put("PumpIOB", pump.iob);

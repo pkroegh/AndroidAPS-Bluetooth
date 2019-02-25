@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -17,10 +16,8 @@ import java.util.Objects;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
-import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
-import info.nightscout.androidaps.plugins.PumpDanaR.SerialIOThread;
-import info.nightscout.androidaps.plugins.PumpDanaR.services.DanaRExecutionService;
 import info.nightscout.androidaps.plugins.PumpMedtronic.MedtronicPump;
+import info.nightscout.androidaps.plugins.PumpMedtronic.events.EventESPStatusUpdate;
 import info.nightscout.utils.SP;
 
 /*
@@ -28,23 +25,11 @@ import info.nightscout.utils.SP;
  */
 
 public class MedtronicService extends AbstractMedtronicService {
-    public Integer batteryPercent = 0;
-    public Integer reservoirInUnits = 0;
-
-    private Integer missedWakes = 0;
-    private Integer queuedMessages = 0;
-    private Integer wakeInterval = 0;
-    private Boolean mConnectingAfterSleep = false;
-    private long connectTime = 0;
-    public Boolean runThread = true;
-
-    public long lastDataTime = 0;
-    protected Boolean mDeviceSleeping = false;
-
     private static final long minToMillisec = 60000;
 
-    private boolean readyForNextMessage = false;
-
+    //private int missedWakes = 0;
+    private int queuedMessages = 0;
+    private boolean runThread = false;
     private byte[] mWriteBuff = new byte[0];
 
     public MedtronicService() {
@@ -52,7 +37,7 @@ public class MedtronicService extends AbstractMedtronicService {
         registerBus();
         registerLocalBroadcastReceiver();
         updateESPWakeIntervalFromPref();
-        maintainConnection();
+        connectESP();
     }
 
     public class LocalBinder extends Binder {
@@ -72,7 +57,7 @@ public class MedtronicService extends AbstractMedtronicService {
     private void registerLocalBroadcastReceiver() {
         MainApp.instance().getApplicationContext().registerReceiver(BluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED));
         MainApp.instance().getApplicationContext().registerReceiver(BluetoothReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
-        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).registerReceiver(BluetoothMessage, new IntentFilter("NEW_BLUETOOTH_MESSAGE"));
+        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).registerReceiver(BluetoothMessage, new IntentFilter(MedtronicPump.NEW_BT_MESSAGE));
     }
 
     private void unregisterLocalBroadcastReceiver() {
@@ -80,7 +65,7 @@ public class MedtronicService extends AbstractMedtronicService {
         MainApp.instance().getApplicationContext().unregisterReceiver(BluetoothReceiver);
     }
 
-    protected BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -91,13 +76,12 @@ public class MedtronicService extends AbstractMedtronicService {
                     if (mSerialIOThread != null) {
                         mSerialIOThread.disconnect();
                     }
-                }
-                if (!mDeviceSleeping) {
-                    //TODO device disconnected without receiving sleep signal!
+                    if (MedtronicPump.getInstance().mDeviceSleeping) {
+                        //TODO device disconnected without receiving sleep signal!
+                    }
                 }
             } else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
                 log.debug("Connected to: " + device.getName());
-
             }
         }
     };
@@ -105,10 +89,10 @@ public class MedtronicService extends AbstractMedtronicService {
     private BroadcastReceiver BluetoothMessage = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            readyForNextMessage = false;
+            MedtronicPump.getInstance().readyForNextMessage = false;
             String message = intent.getStringExtra("message");
             Log.d("receiver", "Got message: " + message);
-            if (message.contains(MedtronicPump.getInstance().ESP_WAKE)) {
+            if (message.contains(MedtronicPump.ESP_WAKE)) {
                 ESPAwake(message);
             } else {
                 handleMessage(message);
@@ -117,34 +101,63 @@ public class MedtronicService extends AbstractMedtronicService {
     };
 
     private void updateESPWakeIntervalFromPref() {
-        wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
+        MedtronicPump.getInstance().wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
     }
 
     private void ESPAwake(String message) {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        log.debug("Message is: " + message);
         updateESPWakeIntervalFromPref();
-        Integer ESPWakeInterval = Integer.valueOf(message.substring(2,3));
-        if (!Objects.equals(ESPWakeInterval, wakeInterval) && 0 < wakeInterval && wakeInterval < 9) {
-            String replay = MedtronicPump.getInstance().ANDROID_WAKE+ "=" + wakeInterval + ";";
+        Integer ESPWakeInterval = Integer.valueOf(message.substring(MedtronicPump.ANDROID_WAKE.length(),MedtronicPump.ANDROID_WAKE.length()+1));
+        if (!Objects.equals(ESPWakeInterval, pump.wakeInterval) && 0 < pump.wakeInterval && pump.wakeInterval < 9) {
+            String replay = MedtronicPump.ANDROID_WAKE + String.valueOf(pump.wakeInterval);
             queueMessage(replay);
         }
-        if (mDeviceFirstConnect || MedtronicPump.getInstance().isNewPump) {
-            MedtronicPump.getInstance().isNewPump = false;
-            mDeviceFirstConnect = false;
+        if (pump.mFirstConnect) {
+            queueMessage(MedtronicPump.ANDROID_PING);
+            queueMessage(MedtronicPump.ANDROID_BASE + String.valueOf(pump.baseBasal));
+            pump.mFirstConnect = false;
         }
-        queueMessage(MedtronicPump.getInstance().ANDROID_PING);
-        mDeviceSleeping = false;
-        readyForNextMessage = true;
+        if (pump.mDeviceSleeping) {
+            queueMessage(MedtronicPump.ANDROID_PING);
+            queueMessage(MedtronicPump.ANDROID_BASE);
+        }
+        pump.mDeviceSleeping = false;
+        pump.readyForNextMessage = true;
+        MainApp.bus().post(new EventESPStatusUpdate());
     }
 
     private void handleMessage(String message) {
-        log.debug("Got message: " + message);
-
-        if (message.contains(MedtronicPump.getInstance().ESP_BATT)) {
-
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (message.contains(MedtronicPump.ESP_BATT)) {
+            pump.batteryRemaining = Integer.valueOf(message.substring(MedtronicPump.ESP_BATT.length()+1,MedtronicPump.ESP_BATT.length()+4));
+        } else if (message.contains(MedtronicPump.ESP_BASE)) {
+            double ESPbaseBasal = Double.valueOf(message.substring(MedtronicPump.ESP_BASE.length()+1,MedtronicPump.ESP_BASE.length()+5));
+            log.debug("Got basal: " + ESPbaseBasal + String.valueOf(pump.baseBasal));
+            if (ESPbaseBasal != pump.baseBasal) {
+                String replay = MedtronicPump.ANDROID_BASE + String.valueOf(pump.baseBasal);
+                queueMessage(replay);
+            } else {
+                pump.baseBasal = ESPbaseBasal;
+            }
+        } else if (message.contains(MedtronicPump.ESP_TEMP)) {
+            Float ESPtempBasal = Float.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+1,MedtronicPump.ESP_TEMP.length()+5));
+            Integer ESPtempDuration= Integer.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+5+":0=".length(),MedtronicPump.ESP_TEMP.length()+5+":0=".length()+2));
+            //if (!Objects.equals(ESPtempBasal, pump.tempBasal)) {
+                //String replay = MedtronicPump.ANDROID_TEMP + "=" + pump.tempBasal;
+                //queueMessage(replay);
+            //} else {
+                pump.tempBasal = ESPtempBasal;
+                pump.tempBasalDuration = ESPtempDuration;
+            //}
+        } else if (message.contains(MedtronicPump.ESP_SLEEP)) {
+            pump.lastConnection = System.currentTimeMillis();
+            pump.readyForNextMessage = false;
+            pump.mDeviceSleeping = true;
+            MainApp.bus().post(new EventESPStatusUpdate());
+            return;
         }
-
-
-        readyForNextMessage = true;
+        pump.readyForNextMessage = true;
     }
 
     public synchronized void queueMessage(String message) {
@@ -158,15 +171,17 @@ public class MedtronicService extends AbstractMedtronicService {
     }
 
     private synchronized void sendNextMessage() {
+        MedtronicPump pump = MedtronicPump.getInstance();
         if (queuedMessages > 0) {
             mSerialIOThread.sendMessage(cutMessageFromBuffer());
         } else {
-            mSerialIOThread.sendMessage("S");
-            readyForNextMessage = false;
+            mSerialIOThread.sendMessage(MedtronicPump.ANDROID_SLEEP + "\r");
+            pump.readyForNextMessage = false;
+            pump.mDeviceSleeping = true;
         }
     }
 
-    String cutMessageFromBuffer() {
+    private String cutMessageFromBuffer() {
         if(mWriteBuff != null && mWriteBuff.length > 0){
             for(int index = 0; index < mWriteBuff.length; index++){
                 if(mWriteBuff[index] == 13){ //Newline received, message end reached
@@ -183,11 +198,26 @@ public class MedtronicService extends AbstractMedtronicService {
         }
     }
 
+    public void connectESP() {
+        MedtronicPump.getInstance().mantainingConnection = true;
+        runThread = true;
+        maintainConnection();
+        MainApp.bus().post(new EventESPStatusUpdate());
+    }
+
+    public void disconnectESP() {
+        MedtronicPump.reset();
+        runThread = false;
+        disconnectThread();
+        MainApp.bus().post(new EventESPStatusUpdate());
+    }
+
     private void maintainConnection() {
         Thread thread = new Thread("maintainConnectionThread") {
+            MedtronicPump pump = MedtronicPump.getInstance();
             public void run(){
                 while (runThread) {
-                    if(!isBTConnected()) {
+                    if(!isBTConnected() && reconnectAfterSleep()) {
                         getBTSocketForSelectedPump();
                         if (mRfcommSocket == null || mBTDevice == null) {
                             return; // Device not found
@@ -195,7 +225,6 @@ public class MedtronicService extends AbstractMedtronicService {
                         try {
                             mRfcommSocket.connect();
                         } catch (IOException e) {
-                            //log.error("Unhandled exception", e);
                             if (e.getMessage().contains("socket closed")) {
                                 log.error("Unhandled exception", e);
                             }
@@ -205,32 +234,36 @@ public class MedtronicService extends AbstractMedtronicService {
                                 mSerialIOThread.disconnect();
                             }
                             mSerialIOThread = new IOThread(mRfcommSocket);
-                            ((IOThread) mSerialIOThread).mKeepRunning = true;
-                            if(!mConnectingAfterSleep) {
-                                connectTime = System.currentTimeMillis();
-                                mConnectingAfterSleep = true;
-                            }
+                            pump.lastConnection = System.currentTimeMillis();
                         }
-                    } else if (readyForNextMessage) {
-                        readyForNextMessage = false;
+                    } else if (pump.readyForNextMessage) {
+                        pump.readyForNextMessage = false;
                         sendNextMessage();
                     }
+                    resetOnFault();
                 }
             }
         };
         thread.start();
     }
 
-    public void killThread() {
-        runThread = false;
+    private boolean reconnectAfterSleep(){
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (!pump.mFirstConnect) {
+            return pump.mDeviceSleeping && (System.currentTimeMillis() - pump.lastConnection) >= (pump.wakeInterval * minToMillisec);
+        }
+        return true;
+    }
+
+    private void resetOnFault(){
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if ((System.currentTimeMillis() - pump.lastConnection) >= (pump.wakeInterval * minToMillisec * 2)) {
+            MedtronicPump.reset();
+        }
     }
 
     private boolean threadNotNull() {
-        if (mSerialIOThread != null) {
-            return true;
-        } else {
-            return false;
-        }
+        return mSerialIOThread != null;
     }
 
     private void disconnectThread() {

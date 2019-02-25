@@ -2,7 +2,6 @@ package info.nightscout.androidaps.plugins.PumpMedtronic.services;
 
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
-import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 
 import org.slf4j.Logger;
@@ -31,10 +30,10 @@ public class IOThread extends AbstractIOThread {
     private OutputStream mOutputStream = null;
     private BluetoothSocket mRfCommSocket;
 
-    public boolean mKeepRunning = true;
+    private boolean mKeepRunning = true;
     private byte[] mReadBuff = new byte[0];
 
-    public IOThread(BluetoothSocket rfcommSocket) {
+    IOThread(BluetoothSocket rfcommSocket) {
         super();
         mRfCommSocket = rfcommSocket;
         try {
@@ -55,14 +54,9 @@ public class IOThread extends AbstractIOThread {
                 int gotBytes = mInputStream.read(newData);
                 appendToBuffer(newData, gotBytes);
                 while (peakForCarrageReturn()) {
-                    SystemClock.sleep(10);
                     byte[] extractedBuff = cutMessageFromBuffer();
                     if (extractedBuff != null) {
-                        String stringMessage = new String(extractedBuff, StandardCharsets.UTF_8);
-                        log.debug("Got string from BluetoothDevice with content: " + stringMessage);
-                        Intent intent = new Intent("NEW_BLUETOOTH_MESSAGE");
-                        intent.putExtra("message", stringMessage);
-                        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).sendBroadcast(intent);
+                        broadcastMessage(new String(extractedBuff, StandardCharsets.UTF_8));
                     }
                 }
             }
@@ -73,9 +67,15 @@ public class IOThread extends AbstractIOThread {
         }
     }
 
+    private void broadcastMessage(String message) {
+        Intent intent = new Intent(MedtronicPump.NEW_BT_MESSAGE);
+        intent.putExtra("message", message);
+        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).sendBroadcast(intent);
+    }
+
     private boolean peakForCarrageReturn() {
         for(int index = 0; index < mReadBuff.length; index++){
-            if(mReadBuff[index] == 13){ //Newline received, message end reached
+            if (mReadBuff[index] == 13){ //Newline received, message end reached
                 return true;
             }
         }
@@ -104,21 +104,29 @@ public class IOThread extends AbstractIOThread {
         }
     }
 
-    public synchronized void sendMessage(String message) {
+    protected synchronized boolean sendMessage(String message) {
         if (!mRfCommSocket.isConnected()) {
-            log.error("Socket not connected on sendMessage");
-            return;
+            log.error("sendMessage Socket not connected");
+            return false;
         }
-        byte[] messageBytes = message.getBytes();
-        log.debug("Write to output: " + message);
-        try {
-            mOutputStream.write(messageBytes);
-        } catch (Exception e) {
-            log.error("sendMessage write exception: ", e);
+        if (message != null) {
+            byte[] messageBytes = message.getBytes();
+            log.debug("sendMessage Write to output: " + message);
+            try {
+                mOutputStream.write(messageBytes);
+                return true;
+            } catch (Exception e) {
+                log.error("sendMessage write exception: ", e);
+                return false;
+            }
+        } else {
+            log.error("sendMessage Message null");
+            return false;
         }
     }
 
-    public void disconnect() {
+    protected void disconnect() {
+        mKeepRunning = false;
         try {
             mInputStream.close();
         } catch (Exception e) {log.error("Thread exception: ", e);}

@@ -129,7 +129,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            String message = "T=null";
+            String message = MedtronicPump.ANDROID_TEMP + "=" + absoluteRate + "0=" + durationInMinutes;
             sMedtronicService.queueMessage(message);
             return result;
         } else {
@@ -152,7 +152,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            String message = "T=null";
+            String message = MedtronicPump.ANDROID_TEMP + "=null";
             sMedtronicService.queueMessage(message);
             return result;
         } else {
