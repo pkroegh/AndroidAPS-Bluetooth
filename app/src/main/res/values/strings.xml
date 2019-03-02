@@ -52,6 +52,7 @@
     <string name="description_wear">Monitor and control AndroidAPS using your WearOS watch.</string>
     <string name="description_xdrip_status_line">Show information about your loop on your xDrip+ watchface.</string>
     <string name="description_sms_communicator">Remote control AndroidAPS using SMS commands.</string>
+    <string name="description_pump_medtronicESP_r">Pump integration for Medtronic pumps using an ESP microcontroller</string>
 
     <string name="objectives_button_start">Start</string>
     <string name="objectives_button_verify">Verify</string>
@@ -1224,10 +1225,49 @@
         <item quantity="other">%1$d minutes</item>
     </plurals>
 
-    <!-- BluetoothPump strings -->
-    <string name="bluetoothservice_stopped">Not running!</string> <!-- Service it not running -->
-    <string name="bluetoothservice_running">Running, not bound</string> <!-- Service it running but not bound -->
-    <string name="bluetoothservice_bound">Bound and running</string> <!-- Service it running and bound -->
+    <string name="medtronicESP">Medtronic ESP</string>
+    <string name="medtronicESP_shortname">DANA</string>
+
+    <string name="medtronicESP_settings">Medtronic ESP settings</string>
+    <string name="medtronicESP_bt_name_title">Medtronic ESP device</string>
+    <string name="key_medtronicESP_bt_name" translatable="false">medtronicESP_bt_name</string>
+    <string name="medtronicESP_upload_title">Upload ESP status to NS</string>
+    <string name="key_medtronicESP_upload" translatable="false">edtronicESP_upload</string>
+    <string name="medtronicESP_bwakeinterval_title">ESP wake time interval (min)</string>
+    <string name="key_medtronicESP_wakeinterval" translatable="false">medtronicESP_wakeinterval</string>
+    <string name="medtronicESP_fake_title">Fake ESP connected</string>
+    <string name="key_medtronicESP_fake" translatable="false">medtronicESP_fake</string>
+
+    <string name="medtronicESP_result_failed">Failed, service not connected</string>
+
+    <string name="medtronicESP_label">Medtronic ESP pump</string>
+    <string name="medtronicESP_client_label">Pump name</string>
+    <string name="medtronicESP_status_label">ESP status</string>
+    <string name="medtronicESP_wake_label">Time to next wake</string>
+    <string name="medtronicESP_battery_label">Remaining battery</string>
+    <string name="medtronicESP_lastconnect_label">Last connect</string>
+    <string name="medtronicESP_seperator">:</string>
+    <string name="medtronicESP_button_label_connect">Start connecting</string>
+    <string name="medtronicESP_button_label_reset">Reset connection</string>
+    <string name="medtronicESP_button_label_serviceNull">Initilizing…</string>
+    <string name="medtronicESP_button_label_resetting">Resetting…</string>
+
+    <string name="medtronicESP_ESPfirstConnect">Connecting…</string>
+    <string name="medtronicESP_ESPsleeping">Sleeping…</string>
+    <string name="medtronicESP_ESPactive">Active</string>
+
+    <!--
+    <string name="medtronicESP_service">Service status</string>
+    <string name="medtronicESP_carbs">Carbs to eat</string>
+    <string name="medtronicESP_revive">Revive service</string>
+    <string name="medtronicESP_discover">Discover devices</string>
+    <string name="medtronicESP_disconnect">Disconnect from device</string>
+
+
+
+    <string name="bluetoothservice_stopped">Not running!</string>
+    <string name="bluetoothservice_running">Running, not bound</string>
+    <string name="bluetoothservice_bound">Bound and running</string>
     <string name="bluetoothservice_invalid">Bluetooth not avaliable</string>
 
     <string name="bluetoothstatus_connected">Connected</string>
@@ -1237,17 +1277,7 @@
     <string name="bluetoothstatus_invalid">Bluetooth not available</string>
     <string name="bluetoothstatus_failed">Cannot connect to device</string>
 
-    <string name="bluetoothfragment_label">BLUETOOTH PUMP</string>
-    <string name="bluetoothfragment_client">Pump name</string>
-    <string name="bluetoothfragment_bluetooth">Bluetooth status</string>
-    <string name="bluetoothfragment_service">Service status</string>
-    <string name="bluetoothfragment_carbs">Carbs to eat</string>
-    <string name="bluetoothfragment_revive">Revive service</string>
-    <string name="bluetoothfragment_discover">Discover devices</string>
-    <string name="bluetoothfragment_disconnect">Disconnect from device</string>
-    <string name="bluetoothfragment_seperator">:</string>
 
-    <!-- BluetoothPump strings -->
     <string name="bluetoothpump">Bluetooth pump</string>
     <string name="bluetoothpump_shortname">BPU</string>
     <string name="bluetoothfragment_connect">Connect to pump</string>
@@ -1255,23 +1285,21 @@
     <string name="bluetooththread_running">Running</string>
     <string name="bluetooththread_stopped">Stopped</string>
 
-    <!-- BluetoothPump alert -->
     <string name="bluetoothalert_disconnected">Connection lost</string>
     <string name="bluetoothalert_client_lost">Connection to client lost</string>
 
-    <!-- BluetoothPump keys -->
     <string name="key_bluetoothpump_uploadstatus" translatable="false">bluetoothpump_uploadstatus</string>
     <string name="key_bluetoothpump_ignorepump" translatable="false">bluetoothpump_ignorepump</string>
     <string name="key_bluetooth_bt_name" translatable="false">bluetooth_bt_name</string>
     <string name="key_bluetooth_useextended" translatable="false">bluetooth_useextended</string>
     <string name="key_bluetoothprofile_dia" translatable="false">bluetoothprofilee_dia</string>
     <string name="pref_ignorepump">Ignore pump connection</string>
-    <string name="bluetoothpump_settings">Bluetooth pump settings</string>
-    <string name="bluetooth_bt_name_title">Bluetooth pump device</string>
+
     <string name="bluetoothpump_uploadstatus_title">Upload status to NS</string>
     <string name="bluetooth_useextended_title">Use extended bolus for >200%</string>
     <string name="bluetoothpump_faking">Faking pump connecting</string>
     <string name="bluetoothpump_failed">Faking pump connecting</string>
 
     <string translatable="false" name="key_bluetoothpump_type">bluetoothpump_type</string>
+    -->
 </resources>

@@ -124,6 +124,14 @@ public enum PumpType {
     TandemTFlex("Tandem t:flex", TandemTSlim), //
     TandemTSlimG4("Tandem t:slim G4", TandemTSlim), //
     TandemTSlimX2("Tandem t:slim X2", TandemTSlim), //
+
+    // Medtronic
+    Medtronic_ESP("Medtronic ESP", 0.025d, null, //
+            new DoseSettings(0.05d, 30, 8*60, 0.05d), //
+            PumpTempBasalType.Absolute, //
+            new DoseSettings(0.05d, 30, 24*60, 0d, 35d), PumpCapability.BasalRate_Duration30minAllowed, //
+            0.025d, 0.025d, null, PumpCapability.ESPPumpCapabilities), // TODO
+
     ;
 
     private String description;

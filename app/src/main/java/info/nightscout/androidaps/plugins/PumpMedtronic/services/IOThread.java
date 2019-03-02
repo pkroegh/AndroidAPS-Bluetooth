@@ -1,6 +1,9 @@
-package info.nightscout.androidaps.plugins.PumpBluetooth.services;
+package info.nightscout.androidaps.plugins.PumpMedtronic.services;
 
 import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
+import android.os.SystemClock;
+import android.support.v4.content.LocalBroadcastManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,22 +11,31 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class SerialConnectedThread extends Thread{
-    private static Logger log = LoggerFactory.getLogger(SerialConnectedThread.class);
+import info.nightscout.androidaps.MainApp;
+import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.PumpMedtronic.MedtronicPump;
+
+/*
+ *   Modified version of DanaR SerialIOThread by mike
+ *
+ *   Modified by ldaug99 on 2019-02-17
+ */
+
+public class IOThread extends AbstractIOThread {
+    private static Logger log = LoggerFactory.getLogger(L.PUMPBTCOMM);
 
     private InputStream mInputStream = null;
     private OutputStream mOutputStream = null;
     private BluetoothSocket mRfCommSocket;
 
+    private boolean mKeepRunning = true;
     private byte[] mReadBuff = new byte[0];
 
-    private boolean mKeepRunning = true;
-
-    public SerialConnectedThread(BluetoothSocket rfcommSocket) {
+    IOThread(BluetoothSocket rfcommSocket) {
         super();
-
         mRfCommSocket = rfcommSocket;
         try {
             mOutputStream = mRfCommSocket.getOutputStream();
@@ -36,62 +48,52 @@ public class SerialConnectedThread extends Thread{
 
     @Override
     public final void run() {
-
-        /*
         try {
             while (mKeepRunning) {
                 int availableBytes = mInputStream.available();
-                // Ask for 1024 byte (or more if available)
                 byte[] newData = new byte[Math.max(1024, availableBytes)];
                 int gotBytes = mInputStream.read(newData);
-                // When we are here there is some new data available
                 appendToBuffer(newData, gotBytes);
-
-                // process all messages we already got
-                while (mReadBuff.length > 3) { // 3rd byte is packet size. continue only if we an determine packet size
-                    SystemClock.sleep(10);
+                while (peakForCarrageReturn()) {
                     byte[] extractedBuff = cutMessageFromBuffer();
-                    if (extractedBuff == null){
-
-                    } else {
-                        String stringMessage = new String(extractedBuff, "UTF-8");
-
-
-                        if (stringMessage.contains("OK")){
-
-                        } else if (stringMessage.contains("pumpStatus")){
-                            long now = System.currentTimeMillis();
-                            log.debug("Got message back from pump!");
-
-                            NSUpload.uploadDeviceStatus();
-                        }
-
-
-
-
+                    if (extractedBuff != null) {
+                        broadcastMessage(new String(extractedBuff, StandardCharsets.UTF_8));
                     }
                 }
             }
         } catch (Exception e) {
-            if (e.getMessage().contains("bt socket closed"))
+            if (!e.getMessage().contains("bt socket closed")) {
                 log.error("Thread exception: ", e);
-            mKeepRunning = false;
+            }
         }
-        */
     }
 
-    void appendToBuffer(byte[] newData, int gotBytes) {
-        // add newData to mReadBuff
+    private void broadcastMessage(String message) {
+        Intent intent = new Intent(MedtronicPump.NEW_BT_MESSAGE);
+        intent.putExtra("message", message);
+        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).sendBroadcast(intent);
+    }
+
+    private boolean peakForCarrageReturn() {
+        for(int index = 0; index < mReadBuff.length; index++){
+            if (mReadBuff[index] == 13){ //Newline received, message end reached
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void appendToBuffer(byte[] newData, int gotBytes) {
         byte[] newReadBuff = new byte[mReadBuff.length + gotBytes];
         System.arraycopy(mReadBuff, 0, newReadBuff, 0, mReadBuff.length);
         System.arraycopy(newData, 0, newReadBuff, mReadBuff.length, gotBytes);
         mReadBuff = newReadBuff;
     }
 
-    byte[] cutMessageFromBuffer() {
-        if(mReadBuff != null && mReadBuff.length > 2){
+    private byte[] cutMessageFromBuffer() {
+        if(mReadBuff != null && mReadBuff.length > 0){
             for(int index = 0; index < mReadBuff.length; index++){
-                if(mReadBuff[index] == 13 && mReadBuff[index + 1] == 10){ //Newline received, message end reached
+                if(mReadBuff[index] == 13){ //Newline received, message end reached
                     byte[] newMessageBuff = Arrays.copyOfRange(mReadBuff, 0,index + 1);
                     mReadBuff = Arrays.copyOfRange(mReadBuff, index + 1,mReadBuff.length);
                     return newMessageBuff;
@@ -103,23 +105,28 @@ public class SerialConnectedThread extends Thread{
         }
     }
 
-    public synchronized void sendMessage(String message) {
+    protected synchronized boolean sendMessage(String message) {
         if (!mRfCommSocket.isConnected()) {
-            log.error("Socket not connected on sendMessage");
-            return;
+            log.error("sendMessage Socket not connected");
+            return false;
         }
-
-        byte[] messageBytes = message.getBytes();
-        log.debug("Write to output: " + message);
-
-        try {
-            mOutputStream.write(messageBytes);
-        } catch (Exception e) {
-            log.error("sendMessage write exception: ", e);
+        if (message != null) {
+            byte[] messageBytes = message.getBytes();
+            log.debug("sendMessage Write to output: " + message);
+            try {
+                mOutputStream.write(messageBytes);
+                return true;
+            } catch (Exception e) {
+                log.error("sendMessage write exception: ", e);
+                return false;
+            }
+        } else {
+            log.error("sendMessage Message null");
+            return false;
         }
     }
 
-    public void disconnect() {
+    protected void disconnect() {
         mKeepRunning = false;
         try {
             mInputStream.close();
@@ -133,6 +140,6 @@ public class SerialConnectedThread extends Thread{
         try {
             System.runFinalization();
         } catch (Exception e) {log.error("Thread exception: ", e);}
-        log.debug("Stopping SerialConnectedThread");
+        log.debug("Stopping OThread");
     }
 }
