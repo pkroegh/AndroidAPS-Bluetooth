@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
+import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -113,14 +114,12 @@ public class MedtronicService extends AbstractMedtronicService {
             String replay = MedtronicPump.ANDROID_WAKE + String.valueOf(pump.wakeInterval);
             queueMessage(replay);
         }
-        if (pump.mFirstConnect) {
+        if (pump.isNewPump) {
             queueMessage(MedtronicPump.ANDROID_PING);
-            queueMessage(MedtronicPump.ANDROID_BASE + String.valueOf(pump.baseBasal));
-            pump.mFirstConnect = false;
+            pump.isNewPump = false;
         }
         if (pump.mDeviceSleeping) {
             queueMessage(MedtronicPump.ANDROID_PING);
-            queueMessage(MedtronicPump.ANDROID_BASE);
         }
         pump.mDeviceSleeping = false;
         pump.readyForNextMessage = true;
@@ -131,15 +130,6 @@ public class MedtronicService extends AbstractMedtronicService {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (message.contains(MedtronicPump.ESP_BATT)) {
             pump.batteryRemaining = Integer.valueOf(message.substring(MedtronicPump.ESP_BATT.length()+1,MedtronicPump.ESP_BATT.length()+4));
-        } else if (message.contains(MedtronicPump.ESP_BASE)) {
-            double ESPbaseBasal = Double.valueOf(message.substring(MedtronicPump.ESP_BASE.length()+1,MedtronicPump.ESP_BASE.length()+5));
-            log.debug("Got basal: " + ESPbaseBasal + String.valueOf(pump.baseBasal));
-            if (ESPbaseBasal != pump.baseBasal) {
-                String replay = MedtronicPump.ANDROID_BASE + String.valueOf(pump.baseBasal);
-                queueMessage(replay);
-            } else {
-                pump.baseBasal = ESPbaseBasal;
-            }
         } else if (message.contains(MedtronicPump.ESP_TEMP)) {
             Float ESPtempBasal = Float.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+1,MedtronicPump.ESP_TEMP.length()+5));
             Integer ESPtempDuration= Integer.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+5+":0=".length(),MedtronicPump.ESP_TEMP.length()+5+":0=".length()+2));
@@ -163,6 +153,7 @@ public class MedtronicService extends AbstractMedtronicService {
     public synchronized void queueMessage(String message) {
         message = message + "\r";
         byte[] messageBytes = message.getBytes();
+        //removeDuplicateInOutputBuffer(messageBytes[0]);
         byte[] newWriteBuff = new byte[mWriteBuff.length + messageBytes.length];
         System.arraycopy(mWriteBuff, 0, newWriteBuff, 0, mWriteBuff.length);
         System.arraycopy(messageBytes, 0, newWriteBuff, mWriteBuff.length, messageBytes.length);
@@ -198,6 +189,27 @@ public class MedtronicService extends AbstractMedtronicService {
         }
     }
 
+    /*
+    private synchronized void removeDuplicateInOutputBuffer(byte command_identifier) {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        byte[] commandBuffer = "PTWS".getBytes();
+        for (int start_index = 0; start_index < mWriteBuff.length; start_index++) {
+            if (mWriteBuff[start_index] == command_identifier){
+                for (int end_index = start_index + 1; end_index < mWriteBuff.length; end_index++) {
+                    for (int index = 0; index < commandBuffer.length; index++) {
+                        if (mWriteBuff[end_index] == commandBuffer[index]) {
+
+                        }
+                    }
+                    if (mWriteBuff[end_index] == )
+                }
+                while ()
+            }
+        }
+
+    }
+    */
+
     public void connectESP() {
         MedtronicPump.getInstance().mantainingConnection = true;
         runThread = true;
@@ -217,7 +229,7 @@ public class MedtronicService extends AbstractMedtronicService {
             MedtronicPump pump = MedtronicPump.getInstance();
             public void run(){
                 while (runThread) {
-                    if(!isBTConnected() && reconnectAfterSleep()) {
+                    if(reconnectAfterSleep() && !isBTConnected()) {
                         getBTSocketForSelectedPump();
                         if (mRfcommSocket == null || mBTDevice == null) {
                             return; // Device not found
@@ -232,6 +244,11 @@ public class MedtronicService extends AbstractMedtronicService {
                         if (isBTConnected()) {
                             if (mSerialIOThread != null) {
                                 mSerialIOThread.disconnect();
+                            }
+                            try {
+                                Thread.sleep(200);
+                            } catch (Exception e) {
+                                log.error("Thread sleep exception: ", e);
                             }
                             mSerialIOThread = new IOThread(mRfcommSocket);
                             pump.lastConnection = System.currentTimeMillis();
@@ -249,7 +266,7 @@ public class MedtronicService extends AbstractMedtronicService {
 
     private boolean reconnectAfterSleep(){
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (!pump.mFirstConnect) {
+        if (!pump.isNewPump) {
             return pump.mDeviceSleeping && (System.currentTimeMillis() - pump.lastConnection) >= (pump.wakeInterval * minToMillisec);
         }
         return true;
@@ -257,9 +274,13 @@ public class MedtronicService extends AbstractMedtronicService {
 
     private void resetOnFault(){
         MedtronicPump pump = MedtronicPump.getInstance();
-        if ((System.currentTimeMillis() - pump.lastConnection) >= (pump.wakeInterval * minToMillisec * 2)) {
+        if (!pump.isNewPump && (System.currentTimeMillis() - pump.lastConnection) >= (pump.wakeInterval * minToMillisec * 2)) {
             MedtronicPump.reset();
         }
+    }
+
+    public boolean isMaintainingConnection() {
+        return runThread;
     }
 
     private boolean threadNotNull() {
@@ -269,6 +290,7 @@ public class MedtronicService extends AbstractMedtronicService {
     private void disconnectThread() {
         if (threadNotNull()) {
             mSerialIOThread.disconnect();
+
         }
     }
 }

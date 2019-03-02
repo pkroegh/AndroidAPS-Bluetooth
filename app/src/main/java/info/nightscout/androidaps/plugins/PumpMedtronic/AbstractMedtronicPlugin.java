@@ -120,7 +120,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public long lastDataTime() {
-        return MedtronicPump.getInstance().lastConnection;
+        return System.currentTimeMillis(); //TODO implement tracking of missed wake
     }
 
     @Override

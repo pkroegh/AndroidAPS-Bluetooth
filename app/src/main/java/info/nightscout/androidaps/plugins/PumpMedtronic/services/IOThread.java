@@ -2,6 +2,7 @@ package info.nightscout.androidaps.plugins.PumpMedtronic.services;
 
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 
 import org.slf4j.Logger;

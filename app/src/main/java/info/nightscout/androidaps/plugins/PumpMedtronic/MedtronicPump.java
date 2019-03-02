@@ -37,12 +37,10 @@ public class MedtronicPump {
 
     public static final String ESP_BATT = "e";
     public static final String ESP_WAKE = "w";
-    public static final String ESP_BASE = "b";
     public static final String ESP_TEMP = "t";
     public static final String ESP_SLEEP = "s";
 
     public static final String ANDROID_PING = "P";
-    public static final String ANDROID_BASE = "B=";
     public static final String ANDROID_TEMP = "T=";
     public static final String ANDROID_WAKE = "W=";
     public static final String ANDROID_SLEEP = "S";
@@ -54,19 +52,16 @@ public class MedtronicPump {
     public boolean mantainingConnection = false;
     public boolean mDeviceSleeping = false;
     public boolean readyForNextMessage = false;
-    public boolean mFirstConnect = true;
+    public boolean isNewPump = true;
     public int wakeInterval = 0;
     public long lastConnection = 0;
-    //public long lastConnTime = 0;
 
     public double reservoirRemainingUnits = 50;
-    public int batteryRemaining;
+    public int batteryRemaining = 50;
 
     public double baseBasal;
     public double tempBasal;
     public int tempBasalDuration;
-
-
 
     // v2 history entries
     public static final int TEMPSTART = 1;
@@ -92,7 +87,7 @@ public class MedtronicPump {
     public String serialNumber = "";
     public long shippingDate = 0;
     public String shippingCountry = "";
-    public boolean isNewPump = true;
+
     public int password = -1;
     public long pumpTime = 0;
 

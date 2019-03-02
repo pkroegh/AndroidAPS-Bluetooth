@@ -42,6 +42,7 @@ public abstract class AbstractMedtronicService extends Service {
     public abstract void queueMessage(String message);
     public abstract void connectESP();
     public abstract void disconnectESP();
+    public abstract boolean isMaintainingConnection();
 
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -56,7 +57,7 @@ public abstract class AbstractMedtronicService extends Service {
     }
 
     public boolean isConnected() {
-        return !MedtronicPump.getInstance().mFirstConnect;
+        return !MedtronicPump.getInstance().isNewPump;
     }
 
     public boolean isConnecting() {
