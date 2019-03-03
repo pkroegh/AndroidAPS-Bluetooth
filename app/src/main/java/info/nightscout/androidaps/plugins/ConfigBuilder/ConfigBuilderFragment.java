@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.ConfigBuilder;
+package info.nightscout.androidaps.plugins.configBuilder;
 
 
 import android.content.Intent;
@@ -39,13 +39,13 @@ import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.interfaces.SensitivityInterface;
-import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
-import info.nightscout.androidaps.plugins.Insulin.InsulinOrefRapidActingPlugin;
-import info.nightscout.androidaps.plugins.ProfileNS.NSProfilePlugin;
-import info.nightscout.androidaps.plugins.PumpVirtual.VirtualPumpPlugin;
-import info.nightscout.androidaps.plugins.Sensitivity.SensitivityOref0Plugin;
-import info.nightscout.utils.FabricPrivacy;
-import info.nightscout.utils.PasswordProtection;
+import info.nightscout.androidaps.plugins.common.SubscriberFragment;
+import info.nightscout.androidaps.plugins.insulin.InsulinOrefRapidActingPlugin;
+import info.nightscout.androidaps.plugins.profile.ns.NSProfilePlugin;
+import info.nightscout.androidaps.plugins.pump.virtual.VirtualPumpPlugin;
+import info.nightscout.androidaps.plugins.sensitivity.SensitivityOref0Plugin;
+import info.nightscout.androidaps.utils.FabricPrivacy;
+import info.nightscout.androidaps.utils.PasswordProtection;
 
 
 public class ConfigBuilderFragment extends SubscriberFragment {

@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Source;
+package info.nightscout.androidaps.plugins.source;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -19,9 +18,9 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.utils.JsonHelper;
-import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
-import info.nightscout.utils.SP;
+import info.nightscout.androidaps.utils.JsonHelper;
+import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
+import info.nightscout.androidaps.utils.SP;
 
 /**
  * Created by mike on 05.08.2016.
@@ -80,7 +79,7 @@ public class SourcePoctechPlugin extends PluginBase implements BgSourceInterface
                     bgReading.value = bgReading.value * Constants.MMOLL_TO_MGDL;
                 boolean isNew = MainApp.getDbHelper().createIfNotExists(bgReading, "Poctech");
                 if (isNew && SP.getBoolean(R.string.key_dexcomg5_nsupload, false)) {
-                    NSUpload.uploadBg(bgReading);
+                    NSUpload.uploadBg(bgReading, "AndroidAPS-Poctech");
                 }
                 if (isNew && SP.getBoolean(R.string.key_dexcomg5_xdripupload, false)) {
                     NSUpload.sendToXdrip(bgReading);

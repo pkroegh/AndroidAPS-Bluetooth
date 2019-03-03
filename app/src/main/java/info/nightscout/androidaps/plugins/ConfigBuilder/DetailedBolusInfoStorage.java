@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.ConfigBuilder;
+package info.nightscout.androidaps.plugins.configBuilder;
 
 import android.support.annotation.Nullable;
 

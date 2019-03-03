@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Insulin;
+package info.nightscout.androidaps.plugins.insulin;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,8 +10,8 @@ import android.widget.TextView;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
-import info.nightscout.utils.FabricPrivacy;
+import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.utils.FabricPrivacy;
 
 /**
  * Created by mike on 17.04.2017.

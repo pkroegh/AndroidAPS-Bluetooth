@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Source;
+package info.nightscout.androidaps.plugins.source;
 
 import org.junit.Assert;
 import org.junit.Test;

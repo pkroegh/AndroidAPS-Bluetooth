@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.ConfigBuilder;
+package info.nightscout.androidaps.plugins.configBuilder;
 
 import android.content.Intent;
 import android.support.annotation.Nullable;
@@ -21,10 +21,10 @@ import info.nightscout.androidaps.events.EventProfileSwitchChange;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.interfaces.TreatmentsInterface;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.Overview.Dialogs.ErrorHelperActivity;
-import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.plugins.general.overview.Dialogs.ErrorHelperActivity;
+import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.queue.Callback;
-import info.nightscout.utils.FabricPrivacy;
+import info.nightscout.androidaps.utils.FabricPrivacy;
 
 public class ProfileFunctions {
     private static Logger log = LoggerFactory.getLogger(L.PROFILE);

@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Insulin;
+package info.nightscout.androidaps.plugins.insulin;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;

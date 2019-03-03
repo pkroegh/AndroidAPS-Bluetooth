@@ -1,18 +1,19 @@
-package info.nightscout.androidaps.plugins.Insulin;
+package info.nightscout.androidaps.plugins.insulin;
 
 import com.squareup.otto.Bus;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Iob;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.Treatments.Treatment;
+import info.nightscout.androidaps.data.Profile;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.interfaces.InsulinInterface;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
-import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
+import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
 
 /**
  * Created by adrian on 13.08.2017.
@@ -62,7 +63,8 @@ public abstract class InsulinOrefBasePlugin extends PluginBase implements Insuli
     }
 
     public double getUserDefinedDia() {
-        return ProfileFunctions.getInstance().getProfile() != null ? ProfileFunctions.getInstance().getProfile().getDia() : MIN_DIA;
+        Profile profile = ProfileFunctions.getInstance().getProfile();
+        return profile != null ? profile.getDia() : MIN_DIA;
     }
 
     public Iob iobCalcForTreatment(Treatment treatment, long time) {

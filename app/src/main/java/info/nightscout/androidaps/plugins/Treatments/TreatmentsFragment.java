@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Treatments;
+package info.nightscout.androidaps.plugins.treatments;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,21 +10,18 @@ import android.widget.TextView;
 
 import com.squareup.otto.Subscribe;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventExtendedBolusChange;
-import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsBolusFragment;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsCareportalFragment;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsExtendedBolusesFragment;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsProfileSwitchFragment;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsTempTargetFragment;
-import info.nightscout.androidaps.plugins.Treatments.fragments.TreatmentsTemporaryBasalsFragment;
-import info.nightscout.utils.FabricPrivacy;
+import info.nightscout.androidaps.plugins.common.SubscriberFragment;
+import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsBolusFragment;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsCareportalFragment;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsExtendedBolusesFragment;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsProfileSwitchFragment;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsTempTargetFragment;
+import info.nightscout.androidaps.plugins.treatments.fragments.TreatmentsTemporaryBasalsFragment;
+import info.nightscout.androidaps.utils.FabricPrivacy;
 
 public class TreatmentsFragment extends SubscriberFragment implements View.OnClickListener {
     TextView treatmentsTab;

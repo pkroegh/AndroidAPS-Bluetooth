@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Insulin;
+package info.nightscout.androidaps.plugins.insulin;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import info.nightscout.androidaps.data.Iob;
-import info.nightscout.androidaps.plugins.Treatments.Treatment;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.interfaces.InsulinInterface;
 
 /**

@@ -1,11 +1,9 @@
-package info.nightscout.androidaps.plugins.Source;
+package info.nightscout.androidaps.plugins.source;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import info.nightscout.androidaps.Config;
 
 @RunWith(PowerMockRunner.class)
 public class SourceDexcomG5PluginTest {

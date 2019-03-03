@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Source;
+package info.nightscout.androidaps.plugins.source;
 
 import android.content.Intent;
 import android.os.Bundle;

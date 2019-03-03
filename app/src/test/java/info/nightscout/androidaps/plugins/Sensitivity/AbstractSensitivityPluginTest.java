@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Sensitivity;
+package info.nightscout.androidaps.plugins.sensitivity;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -8,9 +8,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import info.AAPSMocker;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.interfaces.PluginDescription;
-import info.nightscout.androidaps.plugins.IobCobCalculator.AutosensResult;
-import info.nightscout.androidaps.plugins.IobCobCalculator.IobCobCalculatorPlugin;
-import info.nightscout.utils.SP;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.AutosensResult;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
+import info.nightscout.androidaps.utils.SP;
 
 import static org.junit.Assert.assertEquals;
 

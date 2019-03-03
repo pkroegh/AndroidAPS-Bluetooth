@@ -1,10 +1,10 @@
-package info.nightscout.androidaps.plugins.Insulin;
+package info.nightscout.androidaps.plugins.insulin;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import info.nightscout.androidaps.data.Iob;
-import info.nightscout.androidaps.plugins.Treatments.Treatment;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.Common;
+package info.nightscout.androidaps.plugins.common;
 
 import android.support.v4.app.Fragment;
 
