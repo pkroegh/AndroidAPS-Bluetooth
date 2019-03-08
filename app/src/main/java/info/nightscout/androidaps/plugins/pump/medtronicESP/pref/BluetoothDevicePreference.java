@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.pump.medtronicESP;
+package info.nightscout.androidaps.plugins.pump.medtronicESP.pref;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;

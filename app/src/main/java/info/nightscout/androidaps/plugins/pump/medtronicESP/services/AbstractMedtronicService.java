@@ -37,38 +37,23 @@ public abstract class AbstractMedtronicService extends Service {
 
     protected final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
-    public abstract void queueMessage(String message);
     public abstract void connectESP();
     public abstract void disconnectESP();
     public abstract boolean isMaintainingConnection();
+    public abstract void setTempBasalRate(Double absoluteRate, Integer durationInMinutes);
+    public abstract void cancleTempBasal();
 
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
 
-    public boolean isBusy() {
-        return false;
-    }
-
-    public void connect() {
-
-    }
+    public void connect() {} //TODO add connect feature
 
     public boolean isConnected() {
         return !MedtronicPump.getInstance().isNewPump;
     }
 
-    public boolean isConnecting() {
-        return false;
-    }
-
-    public void disconnect() {
-
-    }
-
-    public void stopConnecting() {
-
-    }
+    public void disconnect() {} //TODO add disconnect feature
 
     protected void getBTSocketForSelectedPump() {
         MedtronicPump pump = MedtronicPump.getInstance();

@@ -16,8 +16,8 @@ import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.events.EventAppExit;
 import info.nightscout.androidaps.plugins.pump.common.defs.PumpType;
-import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.services.MedtronicService;
+import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 
 /*
  *   Modified version of VirtualPumpPlugin and DanaRPlugin by mike
@@ -76,45 +76,14 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public String getName() {
-        return MainApp.gs(R.string.medtronicESP);
-    }
-
-    @Override
-    public int getPreferencesId() {
-        return R.xml.pref_medtronic;
-    }
-
-    @Override
-    public boolean isInitialized() {
-        return sMedtronicService != null;
-    }
-
-    @Override
-    public boolean isHandshakeInProgress() {
-        return false;
-    }
-
-    @Override
-    public void finishHandshaking() {
-
-    }
-
-    @Override
-    public double getReservoirLevel() { return MedtronicPump.getInstance().reservoirRemainingUnits; }
-
-    @Override
-    public int getBatteryLevel() { return MedtronicPump.getInstance().batteryRemaining; }
-
-    @Override
     public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, Profile profile, boolean enforceNew) {
         if (sMedtronicService != null && sMedtronicService.isBTConnected()){
             MedtronicPump pump = MedtronicPump.getInstance();
             PumpEnactResult result = new PumpEnactResult();
             pump.isTempBasalInProgress = true;
             result.success = true;
-            result.absolute = pump.extendedBolusAbsoluteRate;
-            result.duration = pump.extendedBolusRemainingMinutes;
+            result.absolute = pump.tempBasal;
+            result.duration = pump.tempBasalDuration;
             result.isPercent = false;
             result.isTempCancel = false;
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
@@ -122,8 +91,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            String message = MedtronicPump.ANDROID_TEMP + "=" + absoluteRate + "0=" + durationInMinutes;
-            sMedtronicService.queueMessage(message);
+            sMedtronicService.setTempBasalRate(absoluteRate, durationInMinutes);
             return result;
         } else {
             PumpEnactResult result = new PumpEnactResult();
@@ -145,8 +113,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            String message = MedtronicPump.ANDROID_TEMP + "=null";
-            sMedtronicService.queueMessage(message);
+            sMedtronicService.cancleTempBasal();
             return result;
         } else {
             PumpEnactResult result = new PumpEnactResult();

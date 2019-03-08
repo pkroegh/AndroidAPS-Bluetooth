@@ -15,8 +15,8 @@ import java.util.Objects;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventESPStatusUpdate;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventESPStatusUpdate;
 import info.nightscout.androidaps.utils.SP;
 
 /*
@@ -27,9 +27,7 @@ public class MedtronicService extends AbstractMedtronicService {
     private static final long minToMillisec = 60000;
 
     //private int missedWakes = 0;
-    private int queuedMessages = 0;
     private boolean runThread = false;
-    private byte[] mWriteBuff = new byte[0];
 
     public MedtronicService() {
         mBinder = new MedtronicService.LocalBinder();
@@ -51,6 +49,33 @@ public class MedtronicService extends AbstractMedtronicService {
         } catch (RuntimeException x) {
         }
         MainApp.bus().register(this);
+    }
+
+    public void connectESP() {
+        MedtronicPump.getInstance().mantainingConnection = true;
+        runThread = true;
+        maintainConnection();
+        MainApp.bus().post(new EventESPStatusUpdate());
+    }
+
+    public void disconnectESP() {
+        MedtronicPump.reset();
+        runThread = false;
+        disconnectThread();
+        MainApp.bus().post(new EventESPStatusUpdate());
+    }
+
+    public void cancleTempBasal() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.newTemp = false;
+        pump.cancelTemp = true;
+    }
+
+    public void setTempBasalRate(Double absoluteRate, Integer durationInMinutes) {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.tempBasal = absoluteRate;
+        pump.tempBasalDuration = durationInMinutes;
+        pump.newTemp = true;
     }
 
     private void registerLocalBroadcastReceiver() {
@@ -99,25 +124,16 @@ public class MedtronicService extends AbstractMedtronicService {
         }
     };
 
-    private void updateESPWakeIntervalFromPref() {
-        MedtronicPump.getInstance().wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
-    }
-
     private void ESPAwake(String message) {
         MedtronicPump pump = MedtronicPump.getInstance();
         log.debug("Message is: " + message);
-        updateESPWakeIntervalFromPref();
-        Integer ESPWakeInterval = Integer.valueOf(message.substring(MedtronicPump.ANDROID_WAKE.length(),MedtronicPump.ANDROID_WAKE.length()+1));
-        if (!Objects.equals(ESPWakeInterval, pump.wakeInterval) && 0 < pump.wakeInterval && pump.wakeInterval < 9) {
-            String replay = MedtronicPump.ANDROID_WAKE + String.valueOf(pump.wakeInterval);
-            queueMessage(replay);
-        }
+        getWakeIntervalESP(message);
         if (pump.isNewPump) {
-            queueMessage(MedtronicPump.ANDROID_PING);
+            pingESP();
             pump.isNewPump = false;
         }
         if (pump.mDeviceSleeping) {
-            queueMessage(MedtronicPump.ANDROID_PING);
+            pingESP();
         }
         pump.mDeviceSleeping = false;
         pump.readyForNextMessage = true;
@@ -127,17 +143,7 @@ public class MedtronicService extends AbstractMedtronicService {
     private void handleMessage(String message) {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (message.contains(MedtronicPump.ESP_BATT)) {
-            pump.batteryRemaining = Integer.valueOf(message.substring(MedtronicPump.ESP_BATT.length()+1,MedtronicPump.ESP_BATT.length()+4));
-        } else if (message.contains(MedtronicPump.ESP_TEMP)) {
-            Float ESPtempBasal = Float.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+1,MedtronicPump.ESP_TEMP.length()+5));
-            Integer ESPtempDuration= Integer.valueOf(message.substring(MedtronicPump.ESP_TEMP.length()+5+":0=".length(),MedtronicPump.ESP_TEMP.length()+5+":0=".length()+2));
-            //if (!Objects.equals(ESPtempBasal, pump.tempBasal)) {
-                //String replay = MedtronicPump.ANDROID_TEMP + "=" + pump.tempBasal;
-                //queueMessage(replay);
-            //} else {
-                pump.tempBasal = ESPtempBasal;
-                pump.tempBasalDuration = ESPtempDuration;
-            //}
+            pump.batteryRemaining = Integer.valueOf(message.substring(MedtronicPump.ESP_BATT.length()+1, MedtronicPump.ESP_BATT.length()+4));
         } else if (message.contains(MedtronicPump.ESP_SLEEP)) {
             pump.lastConnection = System.currentTimeMillis();
             pump.readyForNextMessage = false;
@@ -148,78 +154,60 @@ public class MedtronicService extends AbstractMedtronicService {
         pump.readyForNextMessage = true;
     }
 
-    public synchronized void queueMessage(String message) {
-        message = message + "\r";
-        byte[] messageBytes = message.getBytes();
-        //removeDuplicateInOutputBuffer(messageBytes[0]);
-        byte[] newWriteBuff = new byte[mWriteBuff.length + messageBytes.length];
-        System.arraycopy(mWriteBuff, 0, newWriteBuff, 0, mWriteBuff.length);
-        System.arraycopy(messageBytes, 0, newWriteBuff, mWriteBuff.length, messageBytes.length);
-        mWriteBuff = newWriteBuff;
-        queuedMessages++;
-    }
-
-    private synchronized void sendNextMessage() {
+    private void sleepESP() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (queuedMessages > 0) {
-            mSerialIOThread.sendMessage(cutMessageFromBuffer());
-        } else {
+        if (!pump.mDeviceSleeping) {
             mSerialIOThread.sendMessage(MedtronicPump.ANDROID_SLEEP + "\r");
             pump.readyForNextMessage = false;
             pump.mDeviceSleeping = true;
         }
     }
 
-    private String cutMessageFromBuffer() {
-        if(mWriteBuff != null && mWriteBuff.length > 0){
-            for(int index = 0; index < mWriteBuff.length; index++){
-                if(mWriteBuff[index] == 13){ //Newline received, message end reached
-                    byte[] nextWriteMessage = Arrays.copyOfRange(mWriteBuff, 0,index + 1);
-                    String nextMessageString = new String(nextWriteMessage);
-                    mWriteBuff = Arrays.copyOfRange(mWriteBuff, index + 1,mWriteBuff.length);
-                    queuedMessages--;
-                    return nextMessageString;
-                }
-            }
-            return null;
-        } else {
-            return null;
-        }
+    private void pingESP() {
+        mSerialIOThread.sendMessage(MedtronicPump.ANDROID_PING + "\r");
     }
 
-    /*
-    private synchronized void removeDuplicateInOutputBuffer(byte command_identifier) {
+    private void getWakeIntervalESP(String message) {
         MedtronicPump pump = MedtronicPump.getInstance();
-        byte[] commandBuffer = "PTWS".getBytes();
-        for (int start_index = 0; start_index < mWriteBuff.length; start_index++) {
-            if (mWriteBuff[start_index] == command_identifier){
-                for (int end_index = start_index + 1; end_index < mWriteBuff.length; end_index++) {
-                    for (int index = 0; index < commandBuffer.length; index++) {
-                        if (mWriteBuff[end_index] == commandBuffer[index]) {
-
-                        }
-                    }
-                    if (mWriteBuff[end_index] == )
-                }
-                while ()
-            }
+        updateESPWakeIntervalFromPref();
+        Integer ESPWakeInterval = Integer.valueOf(message.substring(MedtronicPump.ANDROID_WAKE.length(), MedtronicPump.ANDROID_WAKE.length()+1));
+        if (!Objects.equals(ESPWakeInterval, pump.wakeInterval)) {
+            message = MedtronicPump.ANDROID_WAKE + String.valueOf(pump.wakeInterval) + "\r";
+            mSerialIOThread.sendMessage(message);
         }
-
-    }
-    */
-
-    public void connectESP() {
-        MedtronicPump.getInstance().mantainingConnection = true;
-        runThread = true;
-        maintainConnection();
-        MainApp.bus().post(new EventESPStatusUpdate());
     }
 
-    public void disconnectESP() {
-        MedtronicPump.reset();
-        runThread = false;
-        disconnectThread();
-        MainApp.bus().post(new EventESPStatusUpdate());
+    private void getTempForESP() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (pump.newTemp) {
+            String message = MedtronicPump.ANDROID_TEMP + "=" + pump.tempBasal + "0=" + pump.tempBasalDuration + '\r';
+            mSerialIOThread.sendMessage(message);
+            pump.newTemp = false;
+        }
+    }
+
+    private void cancelTempESP() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (pump.cancelTemp) {
+            String message = MedtronicPump.ANDROID_TEMP + "=null" + '\r';
+            mSerialIOThread.sendMessage(message);
+            pump.cancelTemp = false;
+            pump.isTempBasalInProgress = false;
+        }
+    }
+
+    private void manageTempESP() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (pump.newTemp && !pump.cancelTemp) {
+            getTempForESP();
+        } else if (pump.cancelTemp) {
+            cancelTempESP();
+        }
+    }
+
+    private synchronized void sendNextMessage() {
+        manageTempESP();
+        sleepESP();
     }
 
     private void maintainConnection() {
@@ -286,9 +274,10 @@ public class MedtronicService extends AbstractMedtronicService {
     }
 
     private void disconnectThread() {
-        if (threadNotNull()) {
-            mSerialIOThread.disconnect();
+        if (threadNotNull()) mSerialIOThread.disconnect();
+    }
 
-        }
+    private void updateESPWakeIntervalFromPref() {
+        MedtronicPump.getInstance().wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
     }
 }

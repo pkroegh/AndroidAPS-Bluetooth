@@ -1337,6 +1337,8 @@
     <string name="key_medtronicESP_upload" translatable="false">edtronicESP_upload</string>
     <string name="medtronicESP_bwakeinterval_title">ESP wake time interval (min)</string>
     <string name="key_medtronicESP_wakeinterval" translatable="false">medtronicESP_wakeinterval</string>
+    <integer name="ESP_max_sleep_interval" translatable="false">5</integer>
+    <integer name="ESP_min_sleep_interval" translatable="false">1</integer>
     <string name="medtronicESP_fake_title">Fake ESP connected</string>
     <string name="key_medtronicESP_fake" translatable="false">medtronicESP_fake</string>
 
