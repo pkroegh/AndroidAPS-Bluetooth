@@ -18,8 +18,8 @@ public class SleepIntervalPreference extends ListPreference {
     public SleepIntervalPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
         Vector<CharSequence> entries = new Vector<CharSequence>();
-        for (int i = R.integer.ESP_min_sleep_interval; !(i > R.integer.ESP_max_sleep_interval); i++) {
-            entries.add(String.valueOf(i));
+        for (int i = 0; i <= (getContext().getResources().getInteger(R.integer.ESP_max_sleep_interval) - getContext().getResources().getInteger(R.integer.ESP_min_sleep_interval)); i++) {
+            entries.add(String.valueOf(i + getContext().getResources().getInteger(R.integer.ESP_min_sleep_interval)));
         }
         setEntries(entries.toArray(new CharSequence[0]));
         setEntryValues(entries.toArray(new CharSequence[0]));
