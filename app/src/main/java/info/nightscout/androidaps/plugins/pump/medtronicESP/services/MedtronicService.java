@@ -10,7 +10,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Objects;
 
 import info.nightscout.androidaps.MainApp;
@@ -37,6 +36,10 @@ public class MedtronicService extends AbstractMedtronicService {
         connectESP();
     }
 
+    void killService() {
+        unregisterLocalBroadcastReceiver();
+    }
+
     public class LocalBinder extends Binder {
         public MedtronicService getServiceInstance() {
             return MedtronicService.this;
@@ -52,6 +55,7 @@ public class MedtronicService extends AbstractMedtronicService {
     }
 
     public void connectESP() {
+        if (isFakingESPConnection()) return;
         MedtronicPump.getInstance().mantainingConnection = true;
         runThread = true;
         maintainConnection();
@@ -65,17 +69,34 @@ public class MedtronicService extends AbstractMedtronicService {
         MainApp.bus().post(new EventESPStatusUpdate());
     }
 
-    public void cancleTempBasal() {
+    public void bolus(double bolus) {
+        if (isFakingESPConnection()) return;
+
+    }
+
+    public void tempBasalStop() {
+        if (isFakingESPConnection()) return;
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.newTemp = false;
         pump.cancelTemp = true;
     }
 
-    public void setTempBasalRate(Double absoluteRate, Integer durationInMinutes) {
+    public void tempBasal(double absoluteRate, int durationInMinutes) {
+        if (isFakingESPConnection()) return;
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.tempBasal = absoluteRate;
         pump.tempBasalDuration = durationInMinutes;
         pump.newTemp = true;
+    }
+
+    public void extendedBolus(double insulin, int durationInHalfHours) {
+        if (isFakingESPConnection()) return;
+
+    }
+
+    public void extendedBolusStop() {
+        if (isFakingESPConnection()) return;
+
     }
 
     private void registerLocalBroadcastReceiver() {
@@ -84,7 +105,7 @@ public class MedtronicService extends AbstractMedtronicService {
         LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).registerReceiver(BluetoothMessage, new IntentFilter(MedtronicPump.NEW_BT_MESSAGE));
     }
 
-    private void unregisterLocalBroadcastReceiver() {
+    protected void unregisterLocalBroadcastReceiver() {
         MainApp.instance().getApplicationContext().unregisterReceiver(BluetoothMessage);
         MainApp.instance().getApplicationContext().unregisterReceiver(BluetoothReceiver);
     }

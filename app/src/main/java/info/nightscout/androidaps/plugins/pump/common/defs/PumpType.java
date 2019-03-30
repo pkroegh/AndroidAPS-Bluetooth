@@ -126,11 +126,11 @@ public enum PumpType {
     TandemTSlimX2("Tandem t:slim X2", TandemTSlim), //
 
     // Medtronic
-    Medtronic_ESP("Medtronic ESP", 0.025d, null, //
-            new DoseSettings(0.05d, 30, 8*60, 0.05d), //
-            PumpTempBasalType.Absolute, //
-            new DoseSettings(0.05d, 30, 24*60, 0d, 35d), PumpCapability.BasalRate_Duration30minAllowed, //
-            0.025d, 0.025d, null, PumpCapability.ESPPumpCapabilities), // TODO
+    Medtronic_ESP("Medtronic ESP", 0.05d, null, // Description, bolus size, special bolus size
+            new DoseSettings(0.05d, 30, 8*60, 0.05d), // Extended bolus settings TODO implement later
+            PumpTempBasalType.Absolute, // Temp basal rate type
+            new DoseSettings(0.025d, 30, 24*60, 0d, 35d), PumpCapability.BasalRate_Duration30minAllowed, // Temp basal dose settings, special basal duration settings
+            0.025d, 0.025d, null, PumpCapability.ESPPumpCapabilities), // base basal min value, base basal step, base basal special steps, pump capabilities
     ;
 
     private String description;

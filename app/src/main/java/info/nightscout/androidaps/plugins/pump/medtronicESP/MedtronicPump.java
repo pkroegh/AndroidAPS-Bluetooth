@@ -42,6 +42,7 @@ public class MedtronicPump {
     public boolean mDeviceSleeping = false;
     public boolean readyForNextMessage = false;
     public boolean isNewPump = true;
+    public boolean isFake = false;
     public int wakeInterval = 0;
     public long lastConnection = 0;
 

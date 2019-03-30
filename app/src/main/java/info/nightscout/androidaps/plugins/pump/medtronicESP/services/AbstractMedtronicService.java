@@ -17,6 +17,7 @@ import java.util.UUID;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPlugin;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.ToastUtils;
@@ -40,11 +41,23 @@ public abstract class AbstractMedtronicService extends Service {
     public abstract void connectESP();
     public abstract void disconnectESP();
     public abstract boolean isMaintainingConnection();
-    public abstract void setTempBasalRate(Double absoluteRate, Integer durationInMinutes);
-    public abstract void cancleTempBasal();
+
+    public abstract void bolus(double bolus);
+    public abstract void tempBasal(double absoluteRate, int durationInMinutes);
+    public abstract void tempBasalStop();
+    public abstract void extendedBolus(double insulin, int durationInHalfHours);
+    public abstract void extendedBolusStop();
+
+    abstract void killService();
 
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    public void stopService() {
+        disconnectESP();
+        killService();
+        this.stopSelf();
     }
 
     public void connect() {} //TODO add connect feature
@@ -81,6 +94,10 @@ public abstract class AbstractMedtronicService extends Service {
     }
 
     public boolean isBTConnected() {
-        return mRfcommSocket != null && mRfcommSocket.isConnected();
+        return isFakingESPConnection() || (mRfcommSocket != null && mRfcommSocket.isConnected());
+    }
+
+    boolean isFakingESPConnection() {
+        return MedtronicPlugin.getPlugin().fakeESPconnection;
     }
 }

@@ -10,14 +10,22 @@ import com.squareup.otto.Subscribe;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.events.EventAppExit;
+import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.interfaces.Constraint;
+import info.nightscout.androidaps.interfaces.PluginType;
+import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.pump.common.defs.PumpType;
+import info.nightscout.androidaps.plugins.pump.danaR.comm.MsgBolusStartWithSpeed;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.services.MedtronicService;
+import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.utils.SP;
 
 /*
  *   Modified version of VirtualPumpPlugin and DanaRPlugin by mike
@@ -37,6 +45,8 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     public MedtronicPlugin() {
         super();
+        useExtendedBoluses = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
+        fakeESPconnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
         pumpDescription.setPumpDescription(PumpType.Medtronic_ESP);
     }
 
@@ -71,8 +81,70 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     @SuppressWarnings("UnusedParameters")
     @Subscribe
-    public void onStatusEvent(final EventAppExit e) {
-        MainApp.instance().getApplicationContext().unbindService(mConnection);
+    public void onStatusEvent(final EventAppExit e) { //TODO what does this do?
+        //sMedtronicService.stopService();
+        //MainApp.instance().getApplicationContext().unbindService(mConnection);
+    }
+
+    @Subscribe
+    public void onStatusEvent(final EventPreferenceChange s) {
+        if (isEnabled(PluginType.PUMP)) {
+            boolean previousValue = useExtendedBoluses;
+            useExtendedBoluses = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
+            if (useExtendedBoluses != previousValue && TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress()) {
+                sMedtronicService.extendedBolusStop();
+            }
+            previousValue = fakeESPconnection;
+            fakeESPconnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
+            if (fakeESPconnection != previousValue && !fakeESPconnection) {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                if (!fakeESPconnection) {
+                    pump.reset();
+                    sMedtronicService.connectESP();
+                } else {
+                    sMedtronicService.disconnectESP();
+                    pump.reset();
+                    pump.isFake = true;
+                    pump.isNewPump = false;
+                }
+            }
+        }
+    }
+
+    @Override
+    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
+        if (sMedtronicService != null && sMedtronicService.isBTConnected()){
+            if (detailedBolusInfo.insulin > 0 || detailedBolusInfo.carbs > 0) {
+                Treatment t = new Treatment();
+                t.isSMB = detailedBolusInfo.isSMB;
+                sMedtronicService.bolus(detailedBolusInfo.insulin);
+                PumpEnactResult result = new PumpEnactResult();
+                result.success = Math.abs(detailedBolusInfo.insulin - t.insulin) < pumpDescription.bolusStep;
+                result.bolusDelivered = t.insulin;
+                result.carbsDelivered = detailedBolusInfo.carbs;
+                if (!result.success)
+                    result.comment = String.format(MainApp.gs(R.string.boluserrorcode), detailedBolusInfo.insulin, t.insulin, 0);
+                else
+                    result.comment = MainApp.gs(R.string.virtualpump_resultok);
+                detailedBolusInfo.insulin = t.insulin;
+                detailedBolusInfo.date = System.currentTimeMillis();
+                TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo, false);
+                return result;
+            } else {
+                PumpEnactResult result = new PumpEnactResult();
+                result.success = false;
+                result.bolusDelivered = 0d;
+                result.carbsDelivered = 0d;
+                result.comment = MainApp.gs(R.string.danar_invalidinput);
+                log.error("deliverTreatment: Invalid input");
+                return result;
+            }
+        } else {
+            PumpEnactResult result = new PumpEnactResult();
+            result.success = false;
+            result.comment = MainApp.gs(R.string.medtronicESP_result_failed);
+            return result;
+        }
     }
 
     @Override
@@ -91,7 +163,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            sMedtronicService.setTempBasalRate(absoluteRate, durationInMinutes);
+            sMedtronicService.tempBasal(absoluteRate, durationInMinutes);
             return result;
         } else {
             PumpEnactResult result = new PumpEnactResult();
@@ -113,7 +185,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
-            sMedtronicService.cancleTempBasal();
+            sMedtronicService.tempBasalStop();
             return result;
         } else {
             PumpEnactResult result = new PumpEnactResult();
@@ -121,5 +193,30 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
             result.comment = MainApp.gs(R.string.medtronicESP_result_failed);
             return result;
         }
+    }
+
+    @Override
+    public boolean isFakingTempsByExtendedBoluses() {
+        return useExtendedBoluses;
+    }
+
+    @Override
+    public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
+
+
+        PumpEnactResult result = new PumpEnactResult();
+        result.enacted = false;
+        result.success = false;
+        return result;
+    }
+
+    @Override
+    public PumpEnactResult cancelExtendedBolus() {
+
+
+        PumpEnactResult result = new PumpEnactResult();
+        result.enacted = false;
+        result.success = false;
+        return result;
     }
 }

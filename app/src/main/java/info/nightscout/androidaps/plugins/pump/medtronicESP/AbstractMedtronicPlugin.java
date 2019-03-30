@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 import info.nightscout.androidaps.BuildConfig;
 import info.nightscout.androidaps.MainApp;
@@ -22,6 +23,8 @@ import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.actions.defs.CustomAction;
+import info.nightscout.androidaps.plugins.general.actions.defs.CustomActionType;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.services.AbstractMedtronicService;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -38,6 +41,9 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     protected Logger log = LoggerFactory.getLogger(L.PUMP);
 
     AbstractMedtronicService sMedtronicService;
+
+    boolean useExtendedBoluses = false;
+    public boolean fakeESPconnection = false;
 
     public PumpDescription pumpDescription = new PumpDescription();
 
@@ -103,7 +109,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public void connect(String from) {
-        if (sMedtronicService != null) sMedtronicService.connect();
+        if (sMedtronicService != null && !fakeESPconnection) sMedtronicService.connect();
     }
 
     @Override
@@ -169,36 +175,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     }
 
     @Override
-    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
-        PumpEnactResult result = new PumpEnactResult();
-        result.enacted = false;
-        result.success = false;
-        return result;
-    }
-
-    @Override
     public PumpEnactResult setTempBasalPercent(Integer percent, Integer durationInMinutes, Profile profile, boolean enforceNew) {
-        PumpEnactResult result = new PumpEnactResult();
-        result.enacted = false;
-        result.success = false;
-        return result;
-    }
-
-    @Override
-    public boolean isFakingTempsByExtendedBoluses() {
-        return false;
-    }
-
-    @Override
-    public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
-        PumpEnactResult result = new PumpEnactResult();
-        result.enacted = false;
-        result.success = false;
-        return result;
-    }
-
-    @Override
-    public PumpEnactResult cancelExtendedBolus() {
         PumpEnactResult result = new PumpEnactResult();
         result.enacted = false;
         result.success = false;
@@ -274,4 +251,17 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         }
         return pumpjson;
     }
+
+    @Override
+    public boolean canHandleDST() {
+        return false;
+    }
+
+    @Override
+    public List<CustomAction> getCustomActions() {
+        return null;
+    }
+
+    @Override
+    public void executeCustomAction(CustomActionType customActionType) {}
 }
