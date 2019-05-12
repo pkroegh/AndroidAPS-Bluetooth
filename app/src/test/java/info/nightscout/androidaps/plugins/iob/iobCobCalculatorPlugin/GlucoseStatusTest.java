@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.data;
+package info.nightscout.androidaps.plugins.iob.iobCobCalculatorPlugin;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,6 +16,7 @@ import java.util.List;
 import info.AAPSMocker;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.db.BgReading;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSSgv;
 import info.nightscout.androidaps.utils.DateUtil;
@@ -36,7 +37,7 @@ public class GlucoseStatusTest {
     @Test
     public void toStringShouldBeOverloaded() {
         GlucoseStatus glucoseStatus = new GlucoseStatus();
-        Assert.assertEquals(true, glucoseStatus.toString().contains("Delta"));
+        Assert.assertEquals(true, glucoseStatus.log().contains("Delta"));
     }
 
     @Test
@@ -51,7 +52,6 @@ public class GlucoseStatusTest {
         when(iobCobCalculatorPlugin.getBgReadings()).thenReturn(generateValidBgData());
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
-
         Assert.assertEquals(214d, glucoseStatus.glucose, 0.001d);
         Assert.assertEquals(-2d, glucoseStatus.delta, 0.001d);
         Assert.assertEquals(-2.5d, glucoseStatus.short_avgdelta, 0.001d); // -2 -2.5 -3 deltas are relative to current value
@@ -65,13 +65,12 @@ public class GlucoseStatusTest {
         when(iobCobCalculatorPlugin.getBgReadings()).thenReturn(generateMostRecentBgData());
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
-
         Assert.assertEquals(215d, glucoseStatus.glucose, 0.001d); // (214+216) / 2
-        Assert.assertEquals(-1.25d, glucoseStatus.delta, 0.001d);
-        Assert.assertEquals(-1.25d, glucoseStatus.short_avgdelta, 0.001d);
-        Assert.assertEquals(-1.25d, glucoseStatus.avgdelta, 0.001d);
+        Assert.assertEquals(-1.0d, glucoseStatus.delta, 0.001d);
+        Assert.assertEquals(-1.0d, glucoseStatus.short_avgdelta, 0.001d);
+        Assert.assertEquals(-1.0d, glucoseStatus.avgdelta, 0.001d);
         Assert.assertEquals(0d, glucoseStatus.long_avgdelta, 0.001d);
-        Assert.assertEquals(1514766850000L, glucoseStatus.date); // date is average too
+        Assert.assertEquals(1514766900000L, glucoseStatus.date); // latest date, even when averaging
     }
 
     @Test
@@ -117,14 +116,25 @@ public class GlucoseStatusTest {
         Assert.assertEquals(0d, GlucoseStatus.average(new ArrayList<>()), 0.001d);
     }
 
+    @Test
+    public void calculateGlucoseStatusForLibreTestBgData() {
+        when(iobCobCalculatorPlugin.getBgReadings()).thenReturn(generateLibreTestData());
+
+        GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
+
+        Assert.assertEquals(100d, glucoseStatus.glucose, 0.001d); //
+        Assert.assertEquals(-10d, glucoseStatus.delta, 0.001d);
+        Assert.assertEquals(-10d, glucoseStatus.short_avgdelta, 0.001d);
+        Assert.assertEquals(-10d, glucoseStatus.avgdelta, 0.001d);
+        Assert.assertEquals(-10d, glucoseStatus.long_avgdelta, 0.001d);
+        Assert.assertEquals(1514766900000L, glucoseStatus.date); // latest date
+    }
+
     @Before
     public void initMocking() {
         AAPSMocker.mockMainApp();
         AAPSMocker.mockStrings();
-
-        PowerMockito.mockStatic(IobCobCalculatorPlugin.class);
-        iobCobCalculatorPlugin = mock(IobCobCalculatorPlugin.class);
-        when(IobCobCalculatorPlugin.getPlugin()).thenReturn(iobCobCalculatorPlugin);
+        iobCobCalculatorPlugin = AAPSMocker.mockIobCobCalculatorPlugin();
 
         PowerMockito.mockStatic(DateUtil.class);
         when(DateUtil.now()).thenReturn(1514766900000L + T.mins(1).msecs());
@@ -179,6 +189,27 @@ public class GlucoseStatusTest {
         List<BgReading> list = new ArrayList<>();
         try {
             list.add(new BgReading(new NSSgv(new JSONObject("{\"mgdl\":214,\"mills\":1514766900000,\"direction\":\"Flat\"}"))));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    List<BgReading> generateLibreTestData() {
+        List<BgReading> list = new ArrayList<>();
+        try {
+            long end_time = 1514766900000L;
+            double latest_reading = 100d;
+            // Now
+            list.add(new BgReading(new NSSgv(new JSONObject("{\"mgdl\":" + (latest_reading) + ",\"mills\":" + (end_time) + ",\"direction\":\"Flat\"}"))));
+            // One minute ago
+            list.add(new BgReading(new NSSgv(new JSONObject("{\"mgdl\":" + (latest_reading) + ",\"mills\":" + (end_time - (1000 * 60 * 1)) + ",\"direction\":\"Flat\"}"))));
+            // Two minutes ago
+            list.add(new BgReading(new NSSgv(new JSONObject("{\"mgdl\":" + (latest_reading) + ",\"mills\":" + (end_time - (1000 * 60 * 2)) + ",\"direction\":\"Flat\"}"))));
+
+            // Three minutes and beyond at constant rate
+            for (int i=3; i < 50; i++) {
+                list.add(new BgReading(new NSSgv(new JSONObject("{\"mgdl\":" + (latest_reading + (i*2)) + ",\"mills\":" + (end_time - (1000 * 60 * i)) + ",\"direction\":\"Flat\"}"))));
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }

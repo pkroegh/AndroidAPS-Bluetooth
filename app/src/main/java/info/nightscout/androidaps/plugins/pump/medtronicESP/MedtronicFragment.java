@@ -32,6 +32,7 @@ public class MedtronicFragment extends SubscriberFragment {
 
     private static final long minToMillisec = 60000;
 
+    TextView vServiceStatus;
     TextView vPumpName;
     TextView vESPStatus;
     TextView vWakeTime;
@@ -70,6 +71,7 @@ public class MedtronicFragment extends SubscriberFragment {
         try {
             View view = inflater.inflate(R.layout.medtronic_fragment, container, false);
 
+            vServiceStatus = view.findViewById(R.id.medtronicESP_service);
             vPumpName = view.findViewById(R.id.medtronicESP_client);
             vESPStatus = view.findViewById(R.id.medtronicESP_status);
             vWakeTime = view.findViewById(R.id.medtronicESP_wake);
@@ -93,9 +95,12 @@ public class MedtronicFragment extends SubscriberFragment {
                     }
                     if (pump.mantainingConnection) { //Reset pump
                         medtronic.sMedtronicService.disconnectESP();
+                        bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_connect));
                     } else if (!pump.mantainingConnection) { //Start connecting to pump
                         medtronic.sMedtronicService.connectESP();
+                        bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
                     }
+                    updateGUI();
                 }
             });
 
@@ -132,7 +137,12 @@ public class MedtronicFragment extends SubscriberFragment {
                         synchronized (MedtronicFragment.this) {
                             //if (!isBound()) return;
                             MedtronicPlugin medtronic = MedtronicPlugin.getPlugin();
-                            if (!medtronic.serviceNotNull()) return;
+                            if (!medtronic.serviceNotNull()) {
+                                vServiceStatus.setText(MainApp.gs(R.string.medtronicESP_service_null));
+                                return;
+                            } else {
+                                vServiceStatus.setText(MainApp.gs(R.string.medtronicESP_service_running));
+                            }
                             if (medtronic.fakeESPconnection) {
                                 vPumpName.setText(MainApp.gs(R.string.medtronicESP_faking));
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_faking));
@@ -169,19 +179,6 @@ public class MedtronicFragment extends SubscriberFragment {
                             basaBasalRateView.setText(String.valueOf(pump.baseBasal));
                             tempBasalView.setText(String.valueOf(pump.tempBasal));
                             batteryView.setText(String.valueOf(pump.batteryRemaining));
-                            if (!medtronic.serviceNotNull()) {
-                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_serviceNull));
-
-                            } else if (pump.isNewPump && pump.mantainingConnection) {
-                                bConnect.setText(MainApp.gs(R.string.medtronicESP_ESPfirstConnect));
-
-                            } else if (!pump.isNewPump && pump.mantainingConnection) {
-                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
-
-                            } else {
-                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_connect));
-
-                            }
                         }
                     }
             );
