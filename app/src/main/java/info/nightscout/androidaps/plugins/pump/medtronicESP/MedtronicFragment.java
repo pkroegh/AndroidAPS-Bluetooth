@@ -95,10 +95,8 @@ public class MedtronicFragment extends SubscriberFragment {
                     }
                     if (pump.mantainingConnection) { //Reset pump
                         medtronic.sMedtronicService.disconnectESP();
-                        bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_connect));
                     } else if (!pump.mantainingConnection) { //Start connecting to pump
                         medtronic.sMedtronicService.connectESP();
-                        bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
                     }
                     updateGUI();
                 }
@@ -156,8 +154,11 @@ public class MedtronicFragment extends SubscriberFragment {
                             MedtronicPump pump = MedtronicPump.getInstance();
                             vPumpName.setText(pump.mDevName);
                             if (!medtronic.sMedtronicService.isMaintainingConnection()) {
+                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_connect));
                                 resetInterface();
                                 return;
+                            } else {
+                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
                             }
                             if (pump.isNewPump) {
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_ESPfirstConnect));
