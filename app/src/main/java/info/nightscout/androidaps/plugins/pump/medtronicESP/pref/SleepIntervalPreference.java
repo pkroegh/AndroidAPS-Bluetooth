@@ -13,7 +13,7 @@ import info.nightscout.androidaps.R;
  *   Created by ldaug99 on 2019-03-08
  */
 
-public class SleepIntervalPreference extends ListPreference {
+public class SleepIntervalPreference extends ListPreference { // TODO delete this and find another solution
 
     public SleepIntervalPreference(Context context, AttributeSet attrs) {
         super(context, attrs);

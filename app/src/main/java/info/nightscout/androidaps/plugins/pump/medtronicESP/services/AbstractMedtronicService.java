@@ -17,7 +17,6 @@ import java.util.UUID;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPlugin;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.ToastUtils;
@@ -32,6 +31,9 @@ public abstract class AbstractMedtronicService extends Service {
     protected BluetoothSocket mRfcommSocket;
     protected BluetoothDevice mBTDevice;
 
+    public boolean useExtendedBoluses = false;
+    public boolean fakeESPconnection = false;
+
     protected AbstractIOThread mSerialIOThread;
 
     protected IBinder mBinder;
@@ -40,13 +42,15 @@ public abstract class AbstractMedtronicService extends Service {
 
     public abstract void connectESP();
     public abstract void disconnectESP();
-    public abstract boolean isMaintainingConnection();
 
     public abstract void bolus(double bolus);
     public abstract void tempBasal(double absoluteRate, int durationInMinutes);
     public abstract void tempBasalStop();
     public abstract void extendedBolus(double insulin, int durationInHalfHours);
     public abstract void extendedBolusStop();
+
+    public abstract boolean isThreadRunning();
+    public abstract void updatePreferences();
 
     abstract void killService();
 
@@ -63,7 +67,7 @@ public abstract class AbstractMedtronicService extends Service {
     public void connect() {} //TODO add connect feature
 
     public boolean isConnected() {
-        return !MedtronicPump.getInstance().isNewPump;
+        return !MedtronicPump.getInstance().loopHandshake;
     }
 
     public void disconnect() {} //TODO add disconnect feature
@@ -94,10 +98,13 @@ public abstract class AbstractMedtronicService extends Service {
     }
 
     public boolean isBTConnected() {
-        return isFakingESPConnection() || (mRfcommSocket != null && mRfcommSocket.isConnected());
+        return isFakingConnection() || (mRfcommSocket != null && mRfcommSocket.isConnected());
     }
 
-    boolean isFakingESPConnection() {
-        return MedtronicPlugin.getPlugin().fakeESPconnection;
+    public boolean isFakingConnection() {
+        return fakeESPconnection;
+    }
+    public boolean isUsingExtendedBolus() {
+        return useExtendedBoluses;
     }
 }

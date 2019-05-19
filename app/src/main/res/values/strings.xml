@@ -1363,6 +1363,8 @@
     <string name="key_medtronicESP_fake" translatable="false">medtronicESP_fake</string>
     <string name="key_medtronicESP_useextended" translatable="false">medtronicESP_useextended</string>
     <string name="medtronicESP_useextended_title">Use extended boluses for >200%</string>
+    <string name="medtronicESP_password_title">Pump password</string>
+    <string name="key_medtronicESP_password" translatable="false">medtronic_password</string>
 
     <string name="medtronicESP_result_failed">Failed, service not connected</string>
 

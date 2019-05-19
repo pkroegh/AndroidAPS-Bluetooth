@@ -15,6 +15,9 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventTempBasalChange;
@@ -29,20 +32,11 @@ import info.nightscout.androidaps.utils.DateUtil;
 
 public class MedtronicFragment extends SubscriberFragment {
     private static Logger log = LoggerFactory.getLogger(L.PUMP);
+    private static final long minToMillisec = 60000; // Conversion from min to milliseconds
 
-    private static final long minToMillisec = 60000;
+    public MedtronicFragment() {
 
-    TextView vServiceStatus;
-    TextView vPumpName;
-    TextView vESPStatus;
-    TextView vWakeTime;
-    TextView vLastConnect;
-
-    TextView basaBasalRateView;
-    TextView tempBasalView;
-    TextView batteryView;
-
-    Button bConnect;
+    }
 
     private Handler loopHandler = new Handler();
     private Runnable refreshLoop = new Runnable() {
@@ -68,55 +62,40 @@ public class MedtronicFragment extends SubscriberFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        try {
-            View view = inflater.inflate(R.layout.medtronic_fragment, container, false);
+        View view = inflater.inflate(R.layout.medtronic_fragment, container, false);
+        unbinder = ButterKnife.bind(this, view);
 
-            vServiceStatus = view.findViewById(R.id.medtronicESP_service);
-            vPumpName = view.findViewById(R.id.medtronicESP_client);
-            vESPStatus = view.findViewById(R.id.medtronicESP_status);
-            vWakeTime = view.findViewById(R.id.medtronicESP_wake);
-            vLastConnect = view.findViewById(R.id.medtronicESP_lastconnect);
-
-            basaBasalRateView = view.findViewById(R.id.medtronicESP_basabasalrate);
-            tempBasalView = view.findViewById(R.id.medtronicESP_tempbasal);
-            batteryView = view.findViewById(R.id.medtronicESP_battery);
-
-            bConnect = view.findViewById(R.id.medtronicESP_button_connect);
-
-            //Click listeners
-            bConnect.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    MedtronicPlugin medtronic = MedtronicPlugin.getPlugin();
-                    MedtronicPump pump = MedtronicPump.getInstance();
-                    if (!medtronic.serviceNotNull()) {
-                        log.error("Service not running on click");
-                        return;
-                    }
-                    if (pump.mantainingConnection) { //Reset pump
-                        medtronic.sMedtronicService.disconnectESP();
-                    } else if (!pump.mantainingConnection) { //Start connecting to pump
-                        medtronic.sMedtronicService.connectESP();
-                    }
-                    updateGUI();
-                }
-            });
-
-            return view;
-        } catch (Exception e) {
-            Crashlytics.logException(e);
-        }
-
-        return null;
+        return view;
     }
 
-    /*
-    @Subscribe
-    public void onStatusEvent(final EventBluetoothPumpUpdateGui ev) {
+    // Interface variable declaration
+    @BindView(R.id.medtronicESP_service) TextView vServiceStatus;
+    @BindView(R.id.medtronicESP_client) TextView vPumpName;
+    @BindView(R.id.medtronicESP_status) TextView vESPStatus;
+    @BindView(R.id.medtronicESP_wake) TextView vWakeTime;
+    @BindView(R.id.medtronicESP_lastconnect) TextView vLastConnect;
+    @BindView(R.id.medtronicESP_basabasalrate) TextView basaBasalRateView;
+    @BindView(R.id.medtronicESP_tempbasal) TextView tempBasalView;
+    @BindView(R.id.medtronicESP_battery) TextView batteryView;
+
+    @BindView(R.id.medtronicESP_button_connect) Button bConnect;
+
+    @OnClick(R.id.medtronicESP_button_connect)
+    void onBtConnectionClick() {
+        MedtronicPlugin medtronic = MedtronicPlugin.getPlugin();
+        if (!medtronic.serviceNotNull()) {
+            log.error("Service not running on click");
+            return;
+        }
+        if (medtronic.sMedtronicService.isThreadRunning()) { // Stop connecting to pump
+            medtronic.sMedtronicService.disconnectESP();
+        } else if (!medtronic.sMedtronicService.isThreadRunning()) { //Start connecting to pump
+            medtronic.sMedtronicService.connectESP();
+        }
         updateGUI();
     }
-    */
 
+    /* Event subscription, updates GUI */
     @Subscribe
     public void onStatusEvent(final EventESPStatusUpdate s) {
         updateGUI();
@@ -127,13 +106,14 @@ public class MedtronicFragment extends SubscriberFragment {
         updateGUI();
     }
 
+    /* GUI update function */
     @Override
     protected void updateGUI() {
         Activity activity = getActivity();
         if (activity != null) {
             activity.runOnUiThread(() -> {
-                        synchronized (MedtronicFragment.this) {
-                            //if (!isBound()) return;
+                        synchronized (MedtronicFragment.this) {  // TODO fix this
+                            if (!isBound()) return;
                             MedtronicPlugin medtronic = MedtronicPlugin.getPlugin();
                             if (!medtronic.serviceNotNull()) {
                                 vServiceStatus.setText(MainApp.gs(R.string.medtronicESP_service_null));
@@ -153,16 +133,16 @@ public class MedtronicFragment extends SubscriberFragment {
                             }
                             MedtronicPump pump = MedtronicPump.getInstance();
                             vPumpName.setText(pump.mDevName);
-                            if (!medtronic.sMedtronicService.isMaintainingConnection()) {
+                            if (!pump.isMantainingConnection) {
                                 bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_connect));
                                 resetInterface();
                                 return;
                             } else {
                                 bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
                             }
-                            if (pump.isNewPump) {
+                            if (pump.loopHandshake) {
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_ESPfirstConnect));
-                            } else if (pump.mDeviceSleeping) {
+                            } else if (pump.isDeviceSleeping) {
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_ESPsleeping));
                             } else {
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_ESPactive));
@@ -202,11 +182,14 @@ public class MedtronicFragment extends SubscriberFragment {
     }
 
     private boolean isBound() {
-        return vPumpName != null
+        return vServiceStatus != null
+                && vPumpName != null
                 && vESPStatus != null
                 && vWakeTime != null
+                && vLastConnect != null
                 && basaBasalRateView != null
                 && tempBasalView != null
-                && batteryView != null;
+                && batteryView != null
+                && bConnect != null;
     }
 }

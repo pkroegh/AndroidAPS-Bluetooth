@@ -8,6 +8,11 @@
             android:key="@string/key_medtronicESP_bt_name"
             android:title="@string/medtronicESP_bt_name_title" />
 
+        <EditTextPreference
+            android:inputType="textPassword"
+            android:key="@string/key_medtronicESP_password"
+            android:title="@string/medtronicESP_password_title"/>
+
         <info.nightscout.androidaps.plugins.pump.medtronicESP.pref.SleepIntervalPreference
             android:dialogTitle="@string/medtronicESP_bwakeinterval_title"
             android:key="@string/key_medtronicESP_wakeinterval"

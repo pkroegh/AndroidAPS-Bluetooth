@@ -45,8 +45,6 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     public MedtronicPlugin() {
         super();
-        useExtendedBoluses = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
-        fakeESPconnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
         pumpDescription.setPumpDescription(PumpType.Medtronic_ESP);
     }
 
@@ -68,14 +66,15 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceDisconnected(ComponentName name) {
-            log.debug("Service is disconnected");
+            log.debug("MedtronicService on disconnect");
             sMedtronicService = null;
         }
 
         public void onServiceConnected(ComponentName name, IBinder service) {
-            log.debug("Service is connected");
+            log.debug("MedtronicService on connect");
             MedtronicService.LocalBinder mLocalBinder = (MedtronicService.LocalBinder) service;
             sMedtronicService = mLocalBinder.getServiceInstance();
+            sMedtronicService.updatePreferences();
         }
     };
 
@@ -86,49 +85,27 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
         //MainApp.instance().getApplicationContext().unbindService(mConnection);
     }
 
-    @Subscribe
-    public void onStatusEvent(final EventPreferenceChange s) {
-        if (isEnabled(PluginType.PUMP)) {
-            boolean previousValue = useExtendedBoluses;
-            useExtendedBoluses = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
-            if (useExtendedBoluses != previousValue && TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress()) {
-                sMedtronicService.extendedBolusStop();
-            }
-            previousValue = fakeESPconnection;
-            fakeESPconnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
-            if (fakeESPconnection != previousValue && !fakeESPconnection) {
-                MedtronicPump pump = MedtronicPump.getInstance();
-                if (!fakeESPconnection) {
-                    pump.reset();
-                    sMedtronicService.connectESP();
-                } else {
-                    sMedtronicService.disconnectESP();
-                    pump.reset();
-                    pump.isFake = true;
-                    pump.isNewPump = false;
-                }
-            }
-        }
-    }
-
     @Override
-    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
+    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) { // TODO fix so that temp is correctly set in pump
         if (sMedtronicService != null && sMedtronicService.isBTConnected()){
             if (detailedBolusInfo.insulin > 0 || detailedBolusInfo.carbs > 0) {
                 Treatment t = new Treatment();
                 t.isSMB = detailedBolusInfo.isSMB;
                 sMedtronicService.bolus(detailedBolusInfo.insulin);
                 PumpEnactResult result = new PumpEnactResult();
-                result.success = Math.abs(detailedBolusInfo.insulin - t.insulin) < pumpDescription.bolusStep;
+                result.success = Math.abs(detailedBolusInfo.insulin - t.insulin) <
+                        pumpDescription.bolusStep;
                 result.bolusDelivered = t.insulin;
                 result.carbsDelivered = detailedBolusInfo.carbs;
                 if (!result.success)
-                    result.comment = String.format(MainApp.gs(R.string.boluserrorcode), detailedBolusInfo.insulin, t.insulin, 0);
+                    result.comment = String.format(MainApp.gs(R.string.boluserrorcode),
+                            detailedBolusInfo.insulin, t.insulin, 0);
                 else
                     result.comment = MainApp.gs(R.string.virtualpump_resultok);
                 detailedBolusInfo.insulin = t.insulin;
                 detailedBolusInfo.date = System.currentTimeMillis();
-                TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo, false);
+                TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo,
+                        false);
                 return result;
             } else {
                 PumpEnactResult result = new PumpEnactResult();
@@ -148,11 +125,11 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, Profile profile, boolean enforceNew) {
+    public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, // TODO fix so that temp is correctly set in pump
+                                                Profile profile, boolean enforceNew) {
         if (sMedtronicService != null && sMedtronicService.isBTConnected()){
             MedtronicPump pump = MedtronicPump.getInstance();
             PumpEnactResult result = new PumpEnactResult();
-            pump.isTempBasalInProgress = true;
             result.success = true;
             result.absolute = pump.tempBasal;
             result.duration = pump.tempBasalDuration;
@@ -160,7 +137,8 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
             result.isTempCancel = false;
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
                 result.enacted = true;
-                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
+                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).
+                        source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
             sMedtronicService.tempBasal(absoluteRate, durationInMinutes);
@@ -174,7 +152,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public PumpEnactResult cancelTempBasal(boolean force) {
+    public PumpEnactResult cancelTempBasal(boolean force) { // TODO fix so that temp is correctly set in pump
         if (sMedtronicService != null && sMedtronicService.isBTConnected()){
             PumpEnactResult result = new PumpEnactResult();
             result.success = true;
@@ -182,7 +160,8 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
             result.comment = MainApp.gs(R.string.virtualpump_resultok);
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
                 result.enacted = true;
-                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
+                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).
+                        source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
             }
             sMedtronicService.tempBasalStop();
@@ -196,8 +175,8 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public boolean isFakingTempsByExtendedBoluses() {
-        return useExtendedBoluses;
+    public boolean isFakingTempsByExtendedBoluses() { // TODO implement this
+        return sMedtronicService.isUsingExtendedBolus();
     }
 
     @Override
@@ -211,7 +190,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public PumpEnactResult cancelExtendedBolus() {
+    public PumpEnactResult cancelExtendedBolus() { // TODO implement this
 
 
         PumpEnactResult result = new PumpEnactResult();

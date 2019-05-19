@@ -11,7 +11,6 @@ import java.util.List;
 import info.nightscout.androidaps.BuildConfig;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.ExtendedBolus;
@@ -41,9 +40,6 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     protected Logger log = LoggerFactory.getLogger(L.PUMP);
 
     AbstractMedtronicService sMedtronicService;
-
-    boolean useExtendedBoluses = false;
-    public boolean fakeESPconnection = false;
 
     public PumpDescription pumpDescription = new PumpDescription();
 
@@ -81,7 +77,6 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     @Override
     public void getPumpStatus() {
         if (serviceNotNull()) {
-            //sMedtronicService.getPumpStatus();
             MedtronicPump pump = MedtronicPump.getInstance();
             pumpDescription.basalStep = pump.basalStep;
             pumpDescription.bolusStep = pump.bolusStep;
@@ -96,7 +91,12 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public long lastDataTime() {
-        return System.currentTimeMillis(); //TODO implement tracking of missed wake
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (pump.failedToReconnect && !pump.loopHandshake) {
+            return pump.lastConnection;
+        } else {
+            return System.currentTimeMillis();
+        }
     }
 
     @Override
@@ -109,7 +109,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public void connect(String from) {
-        if (sMedtronicService != null && !fakeESPconnection) sMedtronicService.connect();
+        if (sMedtronicService != null && !sMedtronicService.isFakingConnection()) sMedtronicService.connect();
     }
 
     @Override
@@ -171,7 +171,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     }
 
     @Override
-    public void stopBolusDelivering() {
+    public void stopBolusDelivering() {  // TODO implement this
     }
 
     @Override
@@ -220,7 +220,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         JSONObject extended = new JSONObject();
         try {
             battery.put("percent", pump.batteryRemaining);
-            status.put("status", pump.mDeviceSleeping ? "suspended" : "normal");
+            status.put("status", pump.isDeviceSleeping ? "suspended" : "normal");
             status.put("timestamp", DateUtil.toISOString(pump.lastConnection));
             extended.put("Version", BuildConfig.VERSION_NAME + "-" + BuildConfig.BUILDVERSION);
             TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);

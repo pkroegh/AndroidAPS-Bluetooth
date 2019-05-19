@@ -110,6 +110,7 @@ public class IOThread extends AbstractIOThread {
             return false;
         }
         if (message != null) {
+            message = MedtronicPump.getInstance().pump_password + ":" + message;
             byte[] messageBytes = message.getBytes();
             log.debug("sendMessage Write to output: " + message);
             try {
