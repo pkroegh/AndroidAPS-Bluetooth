@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.crashlytics.android.Crashlytics;
 import com.squareup.otto.Subscribe;
 
 import org.slf4j.Logger;
@@ -138,7 +137,7 @@ public class MedtronicFragment extends SubscriberFragment {
                                 resetInterface();
                                 return;
                             } else {
-                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_reset));
+                                bConnect.setText(MainApp.gs(R.string.medtronicESP_button_label_stop));
                             }
                             if (pump.loopHandshake) {
                                 vESPStatus.setText(MainApp.gs(R.string.medtronicESP_ESPfirstConnect));

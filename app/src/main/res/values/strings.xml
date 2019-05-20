@@ -1365,6 +1365,8 @@
     <string name="medtronicESP_useextended_title">Use extended boluses for >200%</string>
     <string name="medtronicESP_password_title">Pump password</string>
     <string name="key_medtronicESP_password" translatable="false">medtronic_password</string>
+    <string name="medtronicESP_uploadNS_title">Upload commands to NS</string>
+    <string name="key_medtronicESP_uploadNS" translatable="false">medtronic_uploadNS</string>
 
     <string name="medtronicESP_result_failed">Failed, service not connected</string>
 
@@ -1380,7 +1382,7 @@
     <string name="medtronicESP_service_running">Running</string>
 
     <string name="medtronicESP_button_label_connect">Start connecting</string>
-    <string name="medtronicESP_button_label_reset">Reset connection</string>
+    <string name="medtronicESP_button_label_stop">Stop connecting</string>
 
     <string name="medtronicESP_ESPfirstConnect">Connecting…</string>
     <string name="medtronicESP_ESPsleeping">Sleeping…</string>

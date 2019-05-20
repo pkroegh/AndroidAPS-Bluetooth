@@ -11,11 +11,14 @@ import android.util.Log;
 
 import com.squareup.otto.Subscribe;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.util.Objects;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
@@ -23,6 +26,7 @@ import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventESPStatu
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.SP;
 
+import static info.nightscout.androidaps.utils.DateUtil.now; // Get now() function, which returns current time
 /*
  *   Created by ldaug99 on 2019-02-17
  */
@@ -32,6 +36,16 @@ public class MedtronicService extends AbstractMedtronicService {
 
     private boolean runConnectThread = false;
     private boolean runCommandThread = false;
+
+    /* NS upload types */
+    private static final String COMMAND_SEND = "Send command: ";
+    private static final String COMMAND_CONFIRMED = "Command confirmed: ";
+
+    /* NS command types */
+    private static final int SEND_PING = 1;
+    private static final int SEND_BOLUS = 2;
+    private static final int SEND_TEMP = 3;
+    private static final int SEND_SLEEP = 4;
 
     public MedtronicService() {
         mBinder = new MedtronicService.LocalBinder();
@@ -86,32 +100,33 @@ public class MedtronicService extends AbstractMedtronicService {
     /* Pump actions */
     public void bolus(double bolus) {
         if (isFakingConnection()) return;
-
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.bolusToDeliver = bolus;
+        pump.deliverBolus = true;
     }
 
-    public void tempBasalStop() { // TODO fix
+    public void tempBasalStop() {
         if (isFakingConnection()) return;
         MedtronicPump pump = MedtronicPump.getInstance();
-        pump.setNewTemp = false;
-        pump.cancelTemp = true;
+        pump.tempAction = 2;
+        pump.newTempAction = true;
     }
 
-    public void tempBasal(double absoluteRate, int durationInMinutes) { // TODO fix
+    public void tempBasal(double absoluteRate, int durationInMinutes) {
         if (isFakingConnection()) return;
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.tempBasal = absoluteRate;
         pump.tempBasalDuration = durationInMinutes;
-        pump.setNewTemp = true;
+        pump.tempAction = 1;
+        pump.newTempAction = true;
     }
 
     public void extendedBolus(double insulin, int durationInHalfHours) {  // TODO implement this
-        if (isFakingConnection()) return;
-
+        //if (isFakingConnection()) return;
     }
 
     public void extendedBolusStop() {  // TODO implement this
-        if (isFakingConnection()) return;
-
+        //if (isFakingConnection()) return;
     }
 
     /* Broadcast listeners, for BL connection and message reception */
@@ -165,10 +180,10 @@ public class MedtronicService extends AbstractMedtronicService {
             case MedtronicPump.ESP_WAKE: // ESP is handshaking
                 gotWake(message);
                 break;
-            case MedtronicPump.ESP_BATT: // ESP battery status
+            case MedtronicPump.ESP_BATTERY: // ESP battery status
                 gotBatteryStatus(message);
                 break;
-            case MedtronicPump.ESP_BOLU: // ESP bolus status
+            case MedtronicPump.ESP_BOLUS: // ESP bolus status
                 gotBolusStatus(message);
                 break;
             case MedtronicPump.ESP_TEMP: // Current ESP temp status
@@ -188,7 +203,7 @@ public class MedtronicService extends AbstractMedtronicService {
         }
         pump.isDeviceSleeping = false;
         pump.isReadyForMessage = true; // Message processed, ready to continue
-        //NSUpload.uploadEvent(); // TODO implement NS upload on confirm
+        uploadToNS(COMMAND_CONFIRMED, message);
         MainApp.bus().post(new EventESPStatusUpdate()); // Update fragment, with new pump status
     }
 
@@ -206,9 +221,9 @@ public class MedtronicService extends AbstractMedtronicService {
     private void gotBatteryStatus(String message) { // Pump send battery status
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.batteryRemaining = Integer.valueOf(message.substring(
-                Character.toString(MedtronicPump.ESP_BATT).length() + 1,
-                Character.toString(MedtronicPump.ESP_BATT).length() + 4)); // TODO is this necessary??
-        //NSUpload.uploadEvent(); // TODO implement NS upload on confirm
+                Character.toString(MedtronicPump.ESP_BATTERY).length() + 1,
+                Character.toString(MedtronicPump.ESP_BATTERY).length() + 4)); // TODO is this necessary??
+        uploadToNS(COMMAND_CONFIRMED, message);
         pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
@@ -218,7 +233,7 @@ public class MedtronicService extends AbstractMedtronicService {
 
 
         pump.isBolusConfirmed = true;
-        //NSUpload.uploadEvent(); // TODO implement NS upload on confirm
+        uploadToNS(COMMAND_CONFIRMED, message);
         pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
@@ -229,8 +244,7 @@ public class MedtronicService extends AbstractMedtronicService {
         //pump.isTempInProgress
 
         pump.isTempActionConfirmed = true;
-
-        //NSUpload.uploadEvent(); // TODO implement NS upload on confirm
+        uploadToNS(COMMAND_CONFIRMED, message);
         pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
@@ -240,7 +254,7 @@ public class MedtronicService extends AbstractMedtronicService {
         pump.isSleepSendt = false;
         pump.lastConnection = System.currentTimeMillis();
         pump.isReadyForMessage = true;
-        //NSUpload.uploadEvent(); // TODO implement NS upload on confirm
+        uploadToNS(COMMAND_CONFIRMED, MedtronicPump.ANDROID_SLEEP);
         MainApp.bus().post(new EventESPStatusUpdate()); // Update fragment, with new pump status
     }
 
@@ -286,137 +300,196 @@ public class MedtronicService extends AbstractMedtronicService {
 
     private void pumpCommandQueue() {
         Thread thread = new Thread("commandThread") {
-            MedtronicPump pump = MedtronicPump.getInstance();
             int actionState = 0;
             public void run(){
                 while(runCommandThread) {
                     switch (actionState) {
                         case 0: // Wait for pump wake signal - When received, send ping (Pump wake, when isDeviceSleeping is false)
-                            if (!pump.isDeviceSleeping) {
-                                sendPing();
-                                actionState = 1;
-                            }
+                            checkWake();
                             break;
                         case 1: // Pump has confirmed that it's awake, if battery was received (isReadyForNextMessage is true)
-                            if (pump.isReadyForMessage) {
-                                if (pump.isBolusSendt) {
-                                    if (pump.isBolusConfirmed) { // Check if bolus command is confirmed
-                                        pump.deliverBolus = false; // Reset bolus state
-                                        pump.isBolusSendt = false;
-                                        pump.isBolusConfirmed = false;
-                                        actionState = 2; // Bolus send and confirmed by pump, proceed
-                                        break;
-                                    } else { // Bolus command not confirmed, resend
-                                        sendBolus();
-                                    }
-                                }
-                                if (pump.deliverBolus) { // Check if there is any bolus to be delivered
-                                    sendBolus();
-                                } else { // No bolus to deliver, proceed
-                                    actionState = 2;
-                                    break;
-                                }
-                            }
+                            checkBolus();
                             break;
                         case 2: // Check if temp basal is to be set or current temp basal is to be canceled
-                            if (pump.isReadyForMessage) {
-                                if (pump.isTempActionSendt) {
-                                    if (pump.isTempActionConfirmed) {
-                                        pump.newTempAction = false;
-                                        pump.tempAction = 0;
-                                        pump.isTempActionSendt = false;
-                                        pump.isTempActionConfirmed = false;
-                                        actionState = 3; // Bolus send and confirmed by pump, proceed
-                                        break;
-                                    } else { // Temp action not confirmed, resend
-                                        sendTempAction();
-                                    }
-                                }
-                                if (pump.newTempAction) { // Check if there is any bolus to be delivered
-                                    sendTempAction();
-                                } else { // No temp action to be send, proceed
-                                    actionState = 3;
-                                    break;
-                                }
-                            }
+                            checkTemp();
                             break;
                         case 3: // Bolus and temp set, no more commands to process - Put pump to sleep
-                            if (pump.isReadyForMessage) {
-                                if (pump.isSleepSendt) {
-                                    if (pump.isSleepConfirmed) {
-                                        pump.isSleepSendt = false;
-                                        pump.isSleepConfirmed = false;
-                                        pump.isReadyForMessage = false;
-                                        pump.isDeviceSleeping = true;
-                                        try {
-                                            Thread.sleep(500);
-                                        } catch (Exception e) {
-                                            log.error("Thread sleep exception: ", e);
-                                        }
-                                        runCommandThread = false;
-                                    } else {
-                                        sendSleep();
-                                    }
-                                }
-                                sendSleep();
-                            }
+                            checkSleep();
                             break;
                     }
                 }
+
+            }
+
+            private  void checkWake() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                if (!pump.isDeviceSleeping) {
+                    sendCommand(SEND_PING);
+                    sleepThread();
+                    actionState = 1;
+                }
+            }
+
+            private void checkBolus() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                if (pump.isReadyForMessage) {
+                    if (pump.isBolusSendt) {
+                        if (pump.isBolusConfirmed) { // Check if bolus command is confirmed
+                            resetBolus();
+                            actionState = 2; // Bolus send and confirmed by pump, proceed
+                            return;
+                        } else { // Bolus command not confirmed, resend
+                            sendCommand(SEND_BOLUS);
+                            sleepThread();
+                        }
+                    }
+                    if (pump.deliverBolus) { // Check if there is any bolus to be delivered
+                        sendCommand(SEND_BOLUS);
+                        sleepThread();
+                    } else { // No bolus to deliver, proceed
+                        actionState = 2;
+                    }
+                }
+            }
+
+            private void checkTemp() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                if (pump.isReadyForMessage) {
+                    if (pump.isTempActionSendt) {
+                        if (pump.isTempActionConfirmed) {
+                            resetTemp();
+                            actionState = 3; // Bolus send and confirmed by pump, proceed
+                            return;
+                        } else { // Temp action not confirmed, resend
+                            sendCommand(SEND_TEMP);
+                            sleepThread();
+                        }
+                    }
+                    if (pump.newTempAction) { // Check if there is any bolus to be delivered
+                        sendCommand(SEND_TEMP);
+                        sleepThread();
+                    } else { // No temp action to be send, proceed
+                        actionState = 3;
+                    }
+                }
+            }
+
+            private void checkSleep() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                if (pump.isReadyForMessage) {
+                    if (pump.isSleepSendt) {
+                        if (pump.isSleepConfirmed) {
+                            resetSleep();
+                            sleepThread();
+                            runCommandThread = false;
+                            actionState = 0;
+                            return;
+                        } else {
+                            sendCommand(SEND_SLEEP);
+                            sleepThread();
+                        }
+                    }
+                    sendCommand(SEND_SLEEP);
+                    sleepThread();
+                }
+            }
+
+            private void sleepThread() {
+                try {
+                    Thread.sleep(500);
+                } catch (Exception e) {
+                    log.error("Thread sleep exception: ", e);
+                }
+            }
+
+            private void resetBolus() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                pump.deliverBolus = false; // Reset bolus state
+                pump.isBolusSendt = false;
+                pump.isBolusConfirmed = false;
+            }
+
+            private void resetTemp() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                pump.newTempAction = false;
+                pump.tempAction = 0;
+                pump.isTempActionSendt = false;
+                pump.isTempActionConfirmed = false;
+            }
+
+            private void resetSleep() {
+                MedtronicPump pump = MedtronicPump.getInstance();
+                pump.isSleepSendt = false;
+                pump.isSleepConfirmed = false;
+                pump.isReadyForMessage = false;
+                pump.isDeviceSleeping = true;
             }
         };
         thread.start();
     }
 
-    private void sendPing() {
-        mSerialIOThread.sendMessage(MedtronicPump.ANDROID_PING + "\r");
-        //NSUpload.uploadEvent(); // TODO implement NS upload on send
+    private void sendCommand(int action) {
+        MedtronicPump pump = MedtronicPump.getInstance(); // Get pump instance, save to pump variable
+        String message = "";
+        switch(action) {
+            case SEND_PING:
+                message = sendPing();
+                break;
+            case SEND_BOLUS:
+                message = sendBolus();
+                break;
+            case SEND_TEMP:
+                message = sendTempAction();
+                break;
+            case SEND_SLEEP:
+                message = sendSleep();
+                break;
+        }
+        message = message + "\r";
+        mSerialIOThread.sendMessage(message);
+        uploadToNS(COMMAND_SEND, message);
     }
 
-    private void sendBolus() {
-        MedtronicPump pump = MedtronicPump.getInstance(); // TODO implement this
+    private String sendPing() {
+        return MedtronicPump.ANDROID_PING;
+    }
 
-
-        //NSUpload.uploadEvent(); // TODO implement NS upload on send
+    private String sendBolus() {
+        MedtronicPump pump = MedtronicPump.getInstance();
         pump.isBolusSendt = true;
+        return (MedtronicPump.ANDROID_BOLUS + "=" + pump.bolusToDeliver);
     }
 
-    private void sendTempAction() {
-        MedtronicPump pump = MedtronicPump.getInstance(); // TODO implement this
+    private String sendTempAction() {
+        MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.tempAction == 1) { // Set new temp
-            getTempForESP();
-            pump.isTempActionSendt = true;
+            return getTempForESP();
         } else if (pump.tempAction == 2) { // Cancel current temp
             if (pump.isTempInProgress) { // Check if temp is in progress
-                cancelTempESP();
-                pump.isTempActionSendt = true;
+                return cancelTempESP();
             }
+            return "ERROR - TEMP NOT IN PROGRESS ON CANCEL";
         } else {
-            // Invalid temp command
-            // TODO this should never happen
+            // Invalid temp command TODO this should never happen
+            return "FATAL ERROR";
         }
     }
 
-    private void getTempForESP() {
+
+    private String getTempForESP() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        String message = MedtronicPump.ANDROID_TEMP + "=" + pump.tempBasal + "0=" + pump.tempBasalDuration + '\r';
-        mSerialIOThread.sendMessage(message);
-        //NSUpload.uploadEvent(); // TODO implement NS upload on send
         pump.isTempActionSendt = true;
+        return (MedtronicPump.ANDROID_TEMP + "=" + pump.tempBasal + "0=" + pump.tempBasalDuration);
     }
 
-    private void cancelTempESP() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        String message = MedtronicPump.ANDROID_TEMP + "=null" + '\r';
-        mSerialIOThread.sendMessage(message);
-        //NSUpload.uploadEvent(); // TODO implement NS upload on send
-        pump.isTempActionSendt = true;
+    private String cancelTempESP() {
+        MedtronicPump.getInstance().isTempActionSendt = true;
+        return (MedtronicPump.ANDROID_TEMP + "=null");
     }
 
-    private void sendSleep() {
-        mSerialIOThread.sendMessage(MedtronicPump.ANDROID_SLEEP + "\r");
-        //NSUpload.uploadEvent(); // TODO implement NS upload on send
+    private String sendSleep() {
         MedtronicPump.getInstance().isSleepSendt = true;
+        return (MedtronicPump.ANDROID_SLEEP);
     }
 
     private boolean reconnectAfterSleep(){
@@ -454,6 +527,14 @@ public class MedtronicService extends AbstractMedtronicService {
         if (threadNotNull()) mSerialIOThread.disconnect();
     }
 
+    /* Upload event to NS */
+    private void uploadToNS(String uploadType, String command) {
+        if (uploadCommandsToNS) {
+            String note = uploadType + command;
+            NSUpload.uploadEvent(CareportalEvent.NOTE, now(), note);
+        }
+    }
+
     /* Preference management */
     @Subscribe
     public void onStatusEvent(final EventPreferenceChange s) {
@@ -465,13 +546,18 @@ public class MedtronicService extends AbstractMedtronicService {
         updateExtBolusFromPref();
         updateFakeFromPref();
         updatePassFromPref();
+        updateNSFromPref();
     }
 
     private void updateWakeIntervalFromPref() {
         MedtronicPump pump = MedtronicPump.getInstance();
         int previousValue = pump.wakeInterval;
         int wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
+        int maxInterval = this.getResources().getInteger(R.integer.ESP_max_sleep_interval);
+        int minInterval = this.getResources().getInteger(R.integer.ESP_min_sleep_interval);
         if (wakeInterval != previousValue) {
+            if (wakeInterval > maxInterval) wakeInterval = maxInterval;
+            if (wakeInterval < minInterval) wakeInterval = minInterval;
             pump.wakeInterval = wakeInterval;
         }
     }
@@ -502,5 +588,9 @@ public class MedtronicService extends AbstractMedtronicService {
         if (!new_password.equals(pump.pump_password)) {
             pump.pump_password = new_password;
         }
+    }
+
+    private void updateNSFromPref() {
+        uploadCommandsToNS = SP.getBoolean(R.string.key_medtronicESP_uploadNS, false);
     }
 }

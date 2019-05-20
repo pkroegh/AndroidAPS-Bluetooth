@@ -13,10 +13,10 @@
             android:key="@string/key_medtronicESP_password"
             android:title="@string/medtronicESP_password_title"/>
 
-        <info.nightscout.androidaps.plugins.pump.medtronicESP.pref.SleepIntervalPreference
-            android:dialogTitle="@string/medtronicESP_bwakeinterval_title"
+        <EditTextPreference
+            android:inputType="numberSigned"
             android:key="@string/key_medtronicESP_wakeinterval"
-            android:title="@string/medtronicESP_bwakeinterval_title" />
+            android:title="@string/medtronicESP_bwakeinterval_title"/>
 
         <SwitchPreference
             android:defaultValue="false"
@@ -27,6 +27,11 @@
             android:defaultValue="false"
             android:key="@string/key_medtronicESP_useextended"
             android:title="@string/medtronicESP_useextended_title" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_medtronicESP_uploadNS"
+            android:title="@string/medtronicESP_uploadNS_title" />
     </PreferenceCategory>
 
 </PreferenceScreen>

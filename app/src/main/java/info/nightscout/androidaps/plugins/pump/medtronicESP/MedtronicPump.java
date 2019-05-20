@@ -26,14 +26,14 @@ public class MedtronicPump {
     }
     */
 
-    public static final char ESP_BATT = 'e';
+    public static final char ESP_BATTERY = 'e';
     public static final char ESP_WAKE = 'w';
-    public static final char ESP_BOLU = 'b';
+    public static final char ESP_BOLUS = 'b';
     public static final char ESP_TEMP = 't';
     public static final char ESP_SLEEP = 's';
 
     public static final String ANDROID_PING = "P";
-    public static final String ANDROID_BOLU = "B=";
+    public static final String ANDROID_BOLUS = "B=";
     public static final String ANDROID_TEMP = "T=";
     public static final String ANDROID_WAKE = "W=";
     public static final String ANDROID_SLEEP = "S";

@@ -28,15 +28,16 @@ import info.nightscout.androidaps.utils.ToastUtils;
 public abstract class AbstractMedtronicService extends Service {
     protected Logger log = LoggerFactory.getLogger(L.PUMP);
 
-    protected BluetoothSocket mRfcommSocket;
-    protected BluetoothDevice mBTDevice;
+    protected BluetoothSocket mRfcommSocket; // Bluetooth socket
+    protected BluetoothDevice mBTDevice; // Bluetooth device name
 
-    public boolean useExtendedBoluses = false;
-    public boolean fakeESPconnection = false;
+    public boolean useExtendedBoluses = false; // If true, use extended bolus TODO implement this
+    public boolean fakeESPconnection = false; // If true, run plugin as normal, but without ESP connection
+    public boolean uploadCommandsToNS = false; // If true, upload commands send to NS and conformations of commands
 
-    protected AbstractIOThread mSerialIOThread;
+    protected AbstractIOThread mSerialIOThread; // Pointer to bluetooth input/output thread
 
-    protected IBinder mBinder;
+    protected IBinder mBinder; // Binder to plugin
 
     protected final UUID BTMODULEUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
@@ -46,8 +47,8 @@ public abstract class AbstractMedtronicService extends Service {
     public abstract void bolus(double bolus);
     public abstract void tempBasal(double absoluteRate, int durationInMinutes);
     public abstract void tempBasalStop();
-    public abstract void extendedBolus(double insulin, int durationInHalfHours);
-    public abstract void extendedBolusStop();
+    public abstract void extendedBolus(double insulin, int durationInHalfHours); // TODO implement this
+    public abstract void extendedBolusStop(); // TODO implement this
 
     public abstract boolean isThreadRunning();
     public abstract void updatePreferences();
