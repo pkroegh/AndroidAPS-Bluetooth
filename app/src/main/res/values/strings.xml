@@ -1368,6 +1368,12 @@
     <string name="medtronicESP_uploadNS_title">Upload commands to NS</string>
     <string name="key_medtronicESP_uploadNS" translatable="false">medtronic_uploadNS</string>
 
+    <string name="medtronicESP_button_label_history">Go to command history</string>
+    <string name="medtronicESP_command_history">Bluetooth command history</string>
+    <string name="medtronicESP_reloadhistory">Reload history</string>
+    <string name="medtronicESP_history_send">Send</string>
+    <string name="medtronicESP_history_confirmed">Confirmed</string>
+
     <string name="medtronicESP_result_failed">Failed, service not connected</string>
 
     <string name="medtronicESP_label">Medtronic ESP pump</string>
@@ -1387,5 +1393,6 @@
     <string name="medtronicESP_ESPfirstConnect">Connecting…</string>
     <string name="medtronicESP_ESPsleeping">Sleeping…</string>
     <string name="medtronicESP_ESPactive">Active</string>
+    <string name="medtronicESP_ESPhalted">Halted</string>
     <string name="medtronicESP_faking">Faking connection</string>
 </resources>

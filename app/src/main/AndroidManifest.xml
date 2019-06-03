@@ -283,6 +283,7 @@
             android:theme="@style/AppTheme" />
 
         <!-- Medtronic ESP service -->
+        <activity android:name=".plugins.pump.medtronicESP.activities.MedtronicHistoryActivity" />
         <service
             android:name=".plugins.pump.medtronicESP.services.MedtronicService"
             android:enabled="true"

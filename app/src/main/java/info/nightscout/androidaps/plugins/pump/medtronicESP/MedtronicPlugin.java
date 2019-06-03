@@ -87,7 +87,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     @Override
     public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) { // TODO fix so that temp is correctly set in pump
-        if (sMedtronicService != null && sMedtronicService.isBTConnected()){
+        if (sMedtronicService != null){
             if (detailedBolusInfo.insulin > 0 || detailedBolusInfo.carbs > 0) {
                 Treatment t = new Treatment();
                 t.isSMB = detailedBolusInfo.isSMB;
@@ -127,7 +127,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     @Override
     public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, // TODO fix so that temp is correctly set in pump
                                                 Profile profile, boolean enforceNew) {
-        if (sMedtronicService != null && sMedtronicService.isBTConnected()){
+        if (sMedtronicService != null){
             MedtronicPump pump = MedtronicPump.getInstance();
             PumpEnactResult result = new PumpEnactResult();
             result.success = true;
@@ -153,7 +153,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     @Override
     public PumpEnactResult cancelTempBasal(boolean force) { // TODO fix so that temp is correctly set in pump
-        if (sMedtronicService != null && sMedtronicService.isBTConnected()){
+        if (sMedtronicService != null){
             PumpEnactResult result = new PumpEnactResult();
             result.success = true;
             result.isTempCancel = true;
@@ -175,12 +175,15 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public boolean isFakingTempsByExtendedBoluses() { // TODO implement this
-        return sMedtronicService.isUsingExtendedBolus();
+    public boolean isFakingTempsByExtendedBoluses() {
+        if (sMedtronicService != null) {
+            return sMedtronicService.isUsingExtendedBolus();
+        }
+        return false;
     }
 
     @Override
-    public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) {
+    public PumpEnactResult setExtendedBolus(Double insulin, Integer durationInMinutes) { // TODO implement this
 
 
         PumpEnactResult result = new PumpEnactResult();

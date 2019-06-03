@@ -1,21 +1,19 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP.services;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import android.bluetooth.BluetoothSocket;
-import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.comm.MessageHandler;
 
 /*
  *   Modified version of DanaR SerialIOThread by mike
@@ -30,34 +28,52 @@ public class IOThread extends AbstractIOThread {
     private OutputStream mOutputStream = null;
     private BluetoothSocket mRfCommSocket;
 
-    private boolean mKeepRunning = true;
+    private boolean runThread = true;
+
+    private String pumpPassword = "";
+
     private byte[] mReadBuff = new byte[0];
 
-    IOThread(BluetoothSocket rfcommSocket) {
+    IOThread(BluetoothSocket rfcommSocket, String password) {
         super();
         mRfCommSocket = rfcommSocket;
+        trySetupIOStream(); // Setup input/output streams
+        pumpPassword = password;
+        //context.registerReceiver(newSendMessage, new IntentFilter(MedtronicPump.NEW_BT_MESSAGE), null, this);
+
+        this.start();
+    }
+
+    private void trySetupIOStream() {
         try {
             mOutputStream = mRfCommSocket.getOutputStream();
             mInputStream = mRfCommSocket.getInputStream();
         } catch (IOException e) {
             log.error("Unhandled exception", e);
         }
-        this.start();
     }
 
     @Override
     public final void run() {
+        while (runThread) {
+            tryReadBluetoothStream();
+        }
+    }
+
+    private void tryReadBluetoothStream() {
         try {
-            while (mKeepRunning) {
-                int availableBytes = mInputStream.available();
-                byte[] newData = new byte[Math.max(1024, availableBytes)];
-                int gotBytes = mInputStream.read(newData);
-                appendToBuffer(newData, gotBytes);
-                while (peakForCarrageReturn()) {
-                    byte[] extractedBuff = cutMessageFromBuffer();
-                    if (extractedBuff != null) {
-                        broadcastMessage(new String(extractedBuff, StandardCharsets.UTF_8));
-                    }
+            int availableBytes = mInputStream.available();
+            byte[] newData = new byte[Math.max(1024, availableBytes)];
+            int gotBytes = mInputStream.read(newData);
+            appendToBuffer(newData, gotBytes);
+            while (peakForCarrageReturn()) {
+                byte[] extractedBuff = cutMessageFromBuffer();
+                if (extractedBuff != null) {
+                    String message = new String(extractedBuff, StandardCharsets.UTF_8);
+                    log.debug("Got message: " + message);
+                    log.debug("Send message to be processed");
+                    MessageHandler.handleMessage(message);
+                    //broadcastMessage();
                 }
             }
         } catch (Exception e) {
@@ -67,10 +83,11 @@ public class IOThread extends AbstractIOThread {
         }
     }
 
-    private void broadcastMessage(String message) {
-        Intent intent = new Intent(MedtronicPump.NEW_BT_MESSAGE);
-        intent.putExtra("message", message);
-        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).sendBroadcast(intent);
+    private void appendToBuffer(byte[] newData, int gotBytes) {
+        byte[] newReadBuff = new byte[mReadBuff.length + gotBytes];
+        System.arraycopy(mReadBuff, 0, newReadBuff, 0, mReadBuff.length);
+        System.arraycopy(newData, 0, newReadBuff, mReadBuff.length, gotBytes);
+        mReadBuff = newReadBuff;
     }
 
     private boolean peakForCarrageReturn() {
@@ -80,13 +97,6 @@ public class IOThread extends AbstractIOThread {
             }
         }
         return false;
-    }
-
-    private void appendToBuffer(byte[] newData, int gotBytes) {
-        byte[] newReadBuff = new byte[mReadBuff.length + gotBytes];
-        System.arraycopy(mReadBuff, 0, newReadBuff, 0, mReadBuff.length);
-        System.arraycopy(newData, 0, newReadBuff, mReadBuff.length, gotBytes);
-        mReadBuff = newReadBuff;
     }
 
     private byte[] cutMessageFromBuffer() {
@@ -104,30 +114,41 @@ public class IOThread extends AbstractIOThread {
         }
     }
 
-    protected synchronized boolean sendMessage(String message) {
-        if (!mRfCommSocket.isConnected()) {
-            log.error("sendMessage Socket not connected");
-            return false;
+    /*
+    private void broadcastMessage(String message) {
+        Intent intent = new Intent(MedtronicPump.NEW_BT_MESSAGE);
+        intent.putExtra("message", message);
+        LocalBroadcastManager.getInstance(MainApp.instance().getApplicationContext()).sendBroadcast(intent);
+    }
+    */
+
+    /* Handle messages from pump to AndroidAPS */
+    /*
+    private BroadcastReceiver newSendMessage = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String message = intent.getStringExtra("message");
+            log.debug("Got message to send: " + message);
+            sendMessage(message);
         }
+    };
+    */
+
+    protected synchronized void sendMessage(String message) {
         if (message != null) {
-            message = MedtronicPump.getInstance().pump_password + ":" + message;
+            message = pumpPassword + ":" + message;
             byte[] messageBytes = message.getBytes();
             log.debug("sendMessage Write to output: " + message);
             try {
                 mOutputStream.write(messageBytes);
-                return true;
             } catch (Exception e) {
                 log.error("sendMessage write exception: ", e);
-                return false;
             }
-        } else {
-            log.error("sendMessage Message null");
-            return false;
         }
     }
 
     protected void disconnect() {
-        mKeepRunning = false;
+        runThread = false;
         try {
             mInputStream.close();
         } catch (Exception e) {log.error("Thread exception: ", e);}
@@ -142,4 +163,6 @@ public class IOThread extends AbstractIOThread {
         } catch (Exception e) {log.error("Thread exception: ", e);}
         log.debug("Stopping OThread");
     }
+
+
 }

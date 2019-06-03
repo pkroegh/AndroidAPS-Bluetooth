@@ -76,7 +76,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public void getPumpStatus() {
-        if (serviceNotNull()) {
+        if (sMedtronicService != null) {
             MedtronicPump pump = MedtronicPump.getInstance();
             pumpDescription.basalStep = pump.basalStep;
             pumpDescription.bolusStep = pump.bolusStep;
@@ -109,7 +109,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public void connect(String from) {
-        if (sMedtronicService != null && !sMedtronicService.isFakingConnection()) sMedtronicService.connect();
+        if (sMedtronicService != null) sMedtronicService.connect();
     }
 
     @Override
@@ -133,18 +133,13 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public void disconnect(String from) {
-        if (serviceNotNull()) sMedtronicService.disconnect();
+        if (sMedtronicService != null) sMedtronicService.disconnect();
     }
 
     @Override
     public void stopConnecting() {
-        if (serviceNotNull()) sMedtronicService.disconnect();
+        if (sMedtronicService != null) sMedtronicService.disconnect();
     }
-
-    boolean serviceNotNull() {
-        return sMedtronicService != null;
-    }
-
     @Override
     public double getBaseBasalRate() {
         Profile profile = ProfileFunctions.getInstance().getProfile();

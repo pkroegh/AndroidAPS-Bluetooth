@@ -19,26 +19,34 @@ public class MedtronicPump {
         return instance;
     }
 
-    /*
-    public static void reset() {
-        log.debug("MedtronicPump reset");
-        instance = null;
-    }
-    */
-
     public static final char ESP_BATTERY = 'e';
     public static final char ESP_WAKE = 'w';
     public static final char ESP_BOLUS = 'b';
     public static final char ESP_TEMP = 't';
     public static final char ESP_SLEEP = 's';
 
-    public static final String ANDROID_PING = "P";
-    public static final String ANDROID_BOLUS = "B=";
-    public static final String ANDROID_TEMP = "T=";
-    public static final String ANDROID_WAKE = "W=";
-    public static final String ANDROID_SLEEP = "S";
+    public static final char ANDROID_PING = 'P';
+    public static final char ANDROID_BOLUS = 'B';
+    public static final char ANDROID_TEMP = 'T';
+    public static final char ANDROID_WAKE = 'W';
+    public static final char ANDROID_SLEEP = 'S';
+
+    public static final String NEW_INBOUND_MESSAGE = "NEW_BLUETOOTH_IN";
+    public static final String NEW_OUTBOUND_MESSAGE = "NEW_BLUETOOTH_OUT";
+    public static final String NEW_TREATMENT = "NEW_TREATMENT";
 
     public static final String NEW_BT_MESSAGE = "NEW_BLUETOOTH_MESSAGE";
+    public static final String NEW_BT_COMMAND = "NEW_COMMAND_ACTION";
+
+    public static final String BT_COMM_SEND = "COMMAND_SEND";
+    public static final String BT_COMM_CONFIRMED = "COMMAND_CONFIRMED";
+
+    public boolean runConnectThread = false;
+    public boolean runCommandThread = false;
+
+    public boolean isFakingConnection = false; // If true, run plugin as normal, but without ESP connection
+    public boolean isUsingExtendedBolus = false; // If true, use extended bolus
+    public boolean isUploadingToNS = false; // If true, upload commands send to NS and conformations of commands
 
     public String mDevName;
 
@@ -48,12 +56,14 @@ public class MedtronicPump {
     public boolean isReadyForMessage = false; // Pump ready for next command
     public boolean loopHandshake = true; // Loop handshake on first connect and on failure
     public boolean failedToReconnect = false; // Pump failed to reconnect after wake
-    public int wakeInterval = 1;
     public long lastConnection = 0;
 
     public double reservoirRemainingUnits = 50;
     public int batteryRemaining = 50;
     public double baseBasal;
+
+    public int wakeInterval = 1;
+    public boolean isWakeOk = false; // True, when wake interval in pump matches preferences
 
     public boolean isSleepSendt = false; // True, when bolus is send to pump
     public boolean isSleepConfirmed = false; // True, when bolus is confirmed by pump

@@ -82,6 +82,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public static final String DATABASE_INSIGHT_HISTORY_OFFSETS = "InsightHistoryOffsets";
     public static final String DATABASE_INSIGHT_BOLUS_IDS = "InsightBolusIDs";
     public static final String DATABASE_INSIGHT_PUMP_IDS = "InsightPumpIDs";
+    public static final String DATABASE_MEDTRONICHISTORY = "MedtronicCommandHistory"; // Medtronic ESP database name
 
     private static final int DATABASE_VERSION = 11;
 
@@ -131,6 +132,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTableIfNotExists(connectionSource, InsightHistoryOffset.class);
             TableUtils.createTableIfNotExists(connectionSource, InsightBolusID.class);
             TableUtils.createTableIfNotExists(connectionSource, InsightPumpID.class);
+            TableUtils.createTableIfNotExists(connectionSource, MedtronicActionHistory.class); // Create Medtronic ESP database
             database.execSQL("INSERT INTO sqlite_sequence (name, seq) SELECT \"" + DATABASE_INSIGHT_BOLUS_IDS + "\", " + System.currentTimeMillis() + " " +
                     "WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = \"" + DATABASE_INSIGHT_BOLUS_IDS + "\")");
             database.execSQL("INSERT INTO sqlite_sequence (name, seq) SELECT \"" + DATABASE_INSIGHT_PUMP_IDS + "\", " + System.currentTimeMillis() + " " +
@@ -157,6 +159,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 TableUtils.dropTable(connectionSource, ExtendedBolus.class, true);
                 TableUtils.dropTable(connectionSource, CareportalEvent.class, true);
                 TableUtils.dropTable(connectionSource, ProfileSwitch.class, true);
+                TableUtils.dropTable(connectionSource, MedtronicActionHistory.class, true); // Delete Medtronic ESP database
                 onCreate(database, connectionSource);
             } else if (oldVersion < 10) {
                 TableUtils.createTableIfNotExists(connectionSource, InsightHistoryOffset.class);
@@ -216,6 +219,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.dropTable(connectionSource, CareportalEvent.class, true);
             TableUtils.dropTable(connectionSource, ProfileSwitch.class, true);
             TableUtils.dropTable(connectionSource, TDD.class, true);
+            TableUtils.dropTable(connectionSource, MedtronicActionHistory.class, true); // Delete Medtronic ESP database
             TableUtils.createTableIfNotExists(connectionSource, TempTarget.class);
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
@@ -225,6 +229,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTableIfNotExists(connectionSource, CareportalEvent.class);
             TableUtils.createTableIfNotExists(connectionSource, ProfileSwitch.class);
             TableUtils.createTableIfNotExists(connectionSource, TDD.class);
+            TableUtils.createTableIfNotExists(connectionSource, MedtronicActionHistory.class); // Create Medtronic ESP database
             updateEarliestDataChange(0);
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
@@ -321,6 +326,10 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     private Dao<DanaRHistoryRecord, String> getDaoDanaRHistory() throws SQLException {
         return getDao(DanaRHistoryRecord.class);
+    }
+
+    private Dao<MedtronicActionHistory, String> getDaoMedtronicHistory() throws SQLException {
+        return getDao(MedtronicActionHistory.class);
     }
 
     private Dao<TDD, String> getDaoTDD() throws SQLException {
@@ -829,6 +838,58 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         } catch (SQLException | JSONException e) {
             log.error("Unhandled exception: " + trJson.toString(), e);
         }
+    }
+
+    // ----------------- MedtronicHistory handling --------------------
+
+    public void createOrUpdate(MedtronicActionHistory record) {
+        try {
+            getDaoMedtronicHistory().createOrUpdate(record);
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+    }
+
+    public MedtronicActionHistory getMedtronicActionByCommand(char command) {
+        MedtronicActionHistory record = null;
+        try {
+            QueryBuilder<MedtronicActionHistory, String> queryBuilder = getDaoMedtronicHistory().queryBuilder();
+            queryBuilder.orderBy("recordTime", false);
+            queryBuilder.limit(200L);
+            PreparedQuery<MedtronicActionHistory> preparedQuery = queryBuilder.prepare();
+            List<MedtronicActionHistory> list = getDaoMedtronicHistory().query(preparedQuery);
+            if (list.size() == 0) {
+                record = null; // Record does not exists. Ignore
+            } else { // Find newest command, matching input
+                for (int index = 0; index < list.size(); index++) {
+                    record = list.get(index);
+                    if (record.command.contains(Character.toString(command))) {
+                        break;
+                    } else if (index == list.size() - 1) {
+                        record = null;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+            record = null;
+        }
+        return record;
+    }
+
+    public List<MedtronicActionHistory> getMedtronicHistoryRecords() {
+        List<MedtronicActionHistory> historyList;
+        try {
+            QueryBuilder<MedtronicActionHistory, String> queryBuilder = getDaoMedtronicHistory().queryBuilder();
+            queryBuilder.orderBy("recordTime", false);
+            queryBuilder.limit(200L);
+            PreparedQuery<MedtronicActionHistory> preparedQuery = queryBuilder.prepare();
+            historyList = getDaoMedtronicHistory().query(preparedQuery);
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+            historyList = new ArrayList<>();
+        }
+        return historyList;
     }
 
     // ------------ TemporaryBasal handling ---------------
