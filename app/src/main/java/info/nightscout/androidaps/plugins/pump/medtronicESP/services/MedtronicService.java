@@ -332,10 +332,10 @@ public class MedtronicService extends AbstractMedtronicService {
                 if (!pump.isDeviceSleeping) {
                     if (!pump.isWakeOk) {
                         sendCommand(MedtronicPump.ANDROID_WAKE);
-                        sleepThread(50);
+                        sleepThread(50L);
                     }
                     sendCommand(MedtronicPump.ANDROID_PING);
-                    sleepThread(50);
+                    sleepThread(50L);
                     resetWake();
                     actionState = 1;
                 }
@@ -351,12 +351,12 @@ public class MedtronicService extends AbstractMedtronicService {
                             return;
                         } else { // Bolus command not confirmed, resend
                             sendCommand(MedtronicPump.ANDROID_BOLUS);
-                            sleepThread(50);
+                            sleepThread(60000L);
                         }
                     }
                     if (pump.deliverBolus) { // Check if there is any bolus to be delivered
                         sendCommand(MedtronicPump.ANDROID_BOLUS);
-                        sleepThread(50);
+                        sleepThread(60000L);
                     } else { // No bolus to deliver, proceed
                         actionState = 2;
                     }
@@ -373,12 +373,12 @@ public class MedtronicService extends AbstractMedtronicService {
                             return;
                         } else { // Temp action not confirmed, resend
                             sendCommand(MedtronicPump.ANDROID_TEMP);
-                            sleepThread(50);
+                            sleepThread(60000L);
                         }
                     }
                     if (pump.newTempAction) { // Check if there is any bolus to be delivered
                         sendCommand(MedtronicPump.ANDROID_TEMP);
-                        sleepThread(50);
+                        sleepThread(60000L);
                     } else { // No temp action to be send, proceed
                         actionState = 3;
                     }
@@ -391,7 +391,7 @@ public class MedtronicService extends AbstractMedtronicService {
                     if (pump.isSleepSendt) {
                         if (pump.isSleepConfirmed) {
                             resetSleep();
-                            sleepThread(50);
+                            sleepThread(50L);
                             pump.runCommandThread = false;
                             actionState = 0;
                             if (mSerialIOThread != null) {
@@ -401,11 +401,11 @@ public class MedtronicService extends AbstractMedtronicService {
                             return;
                         } else {
                             sendCommand(MedtronicPump.ANDROID_SLEEP);
-                            sleepThread(100);
+                            sleepThread(100L);
                         }
                     }
                     sendCommand(MedtronicPump.ANDROID_SLEEP);
-                    sleepThread(100);
+                    sleepThread(100L);
                 }
             }
 
