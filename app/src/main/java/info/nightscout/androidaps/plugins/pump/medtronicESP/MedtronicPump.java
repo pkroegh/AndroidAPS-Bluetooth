@@ -41,9 +41,6 @@ public class MedtronicPump {
     public static final String BT_COMM_SEND = "COMMAND_SEND";
     public static final String BT_COMM_CONFIRMED = "COMMAND_CONFIRMED";
 
-    public boolean runConnectThread = false;
-    public boolean runCommandThread = false;
-
     public boolean isFakingConnection = false; // If true, run plugin as normal, but without ESP connection
     public boolean isUsingExtendedBolus = false; // If true, use extended bolus
     public boolean isUploadingToNS = false; // If true, upload commands send to NS and conformations of commands
