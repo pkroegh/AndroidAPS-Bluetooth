@@ -1,10 +1,14 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.IBinder;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 
 import com.squareup.otto.Subscribe;
 
@@ -37,6 +41,21 @@ import info.nightscout.androidaps.utils.SP;
 public class MedtronicPlugin extends AbstractMedtronicPlugin {
     private static MedtronicPlugin plugin = null;
 
+    /*
+    private static final int REQUEST_FINE_LOCATION = 1;
+
+    private static String[] ACCESS_FINE_LOCATION = {
+            Manifest.permission.ACCESS_FINE_LOCATION
+    };
+
+    private static final int REQUEST_BLUETOOTH = 1;
+
+    private static String[] ACCESS_BLUETOOTH = {
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+    };
+    */
+
     public static MedtronicPlugin getPlugin() {
         if (plugin == null)
             plugin = new MedtronicPlugin();
@@ -54,6 +73,27 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
         Intent intent = new Intent(context, MedtronicService.class);
         context.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         MainApp.bus().register(this);
+
+        /*
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(context,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(PluginBase, ACCESS_FINE_LOCATION, REQUEST_FINE_LOCATION);
+        } else {
+            // Permission has already been granted
+        }
+
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(context,
+                Manifest.permission.BLUETOOTH)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(ACCESS_BLUETOOTH, REQUEST_BLUETOOTH);
+        } else {
+            // Permission has already been granted
+        }
+        */
         super.onStart();
     }
 

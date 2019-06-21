@@ -10,14 +10,16 @@ import info.nightscout.androidaps.logging.L;
  */
 
 public class MedtronicPump {
-    private static Logger log = LoggerFactory.getLogger(L.PUMP);
-
     private static MedtronicPump instance = null;
 
     public static MedtronicPump getInstance() {
         if (instance == null) instance = new MedtronicPump();
         return instance;
     }
+
+    public static final String ESP_UUID_SERVICE = "27652cbb-76f0-45eb-bc37-826ca7315457";
+    public static final String ESP_UUID_CHARACTERISTIC_TX = "8983c612-5b25-43cd-85f0-391f8dd3cb67";
+    public static final String ESP_UUID_CHARACTERISTIC_RX = "848909c1-a6f0-4fa4-ac2a-06b9a9d4eb60";
 
     public static final char ESP_BATTERY = 'e';
     public static final char ESP_WAKE = 'w';
@@ -45,15 +47,17 @@ public class MedtronicPump {
     public boolean isUsingExtendedBolus = false; // If true, use extended bolus
     public boolean isUploadingToNS = false; // If true, upload commands send to NS and conformations of commands
 
-    public String mDevName;
+    public String mDevName =  "MedESP";
 
-    public String pump_password = "";
+    public String pump_password = null;
 
-    public boolean isDeviceSleeping = false; // Is the pump sleeping
+    public boolean isConnecting = false; // True when waiting for connection to device
+    public boolean isConnected = false; // True when connection has been established with device
+    public boolean isSleeping = false; // True when the pump is sleeping
+    public long lastMessageTime = 0; // Time of last message (used to calculate when to run scan after sleep)
     public boolean isReadyForMessage = false; // Pump ready for next command
-    public boolean loopHandshake = true; // Loop handshake on first connect and on failure
+
     public boolean failedToReconnect = false; // Pump failed to reconnect after wake
-    public long lastConnection = 0;
 
     public double reservoirRemainingUnits = 50;
     public int batteryRemaining = 50;

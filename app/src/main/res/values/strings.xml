@@ -1395,4 +1395,6 @@
     <string name="medtronicESP_ESPactive">Active</string>
     <string name="medtronicESP_ESPhalted">Halted</string>
     <string name="medtronicESP_faking">Faking connection</string>
+
+    <string name="medtronicESP_noPassOrDevice">No password set</string>
 </resources>
