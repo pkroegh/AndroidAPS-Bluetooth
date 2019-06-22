@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 
@@ -30,7 +29,7 @@ public class BluetoothWorkerThread extends Thread {
     private BluetoothGattCharacteristic mOutputCharacteristic;
     private BluetoothGattCharacteristic mInputCharacteristic;
 
-    private boolean mRunThread = true;
+    private boolean mRunBluetoothThread = true;
 
     private int mActionState = 0;
     private int mSendMessageAttempts = 0;
@@ -41,36 +40,58 @@ public class BluetoothWorkerThread extends Thread {
         super();
         log.debug("Initializing BluetoothWorkerThread");
         mBluetoothDevice = bluetoothDevice;
-        updatePumpPassword();
+        getPumpPassword();
         getBluetoothAdapter();
         this.setDaemon(true);
         this.start();
+    }
+
+    public boolean getRunConnectThread() {
+        return mRunBluetoothThread;
+    }
+
+    public void setRunConnectThread(boolean runThread) {
+        mRunBluetoothThread = runThread;
     }
 
     private void getBluetoothAdapter() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null || mBluetoothDevice == null) {
             log.error("Unable to get bluetooth adapter or device, stopping.");
-            mRunThread = false;
+            mRunBluetoothThread = false;
         }
     }
 
-    public void updatePumpPassword() {
-            mPassword = MedtronicPump.getInstance().pump_password;
+    private void getPumpPassword() {
+        mPassword = MedtronicPump.getInstance().pump_password;
+        if (mPassword == null) {
+            mRunBluetoothThread = false;
+        }
     }
 
     public boolean isRunning() {
-        return mRunThread;
+        return mRunBluetoothThread;
     }
 
     @Override
     public final void run() {
-        log.debug("Starting BluetoothWorkerThread");
-        connect();
-        while (mRunThread) {
+        initializeThread();
+        while (mRunBluetoothThread) {
 
         }
+        terminateThread();
+    }
+
+    private void initializeThread() {
+        log.debug("Starting BluetoothWorkerThread");
+        connect();
+    }
+
+    private void terminateThread() {
         disconnect();
+        try {
+            System.runFinalization();
+        } catch (Exception e) {log.error("Thread exception: " + e);}
         log.debug("Stopping BluetoothWorkerThread");
     }
 
@@ -80,7 +101,7 @@ public class BluetoothWorkerThread extends Thread {
                     false, mGattCallback);
         }
         if (mBluetoothGatt == null) {
-            mRunThread = false;
+            mRunBluetoothThread = false;
         }
     }
 
@@ -100,7 +121,7 @@ public class BluetoothWorkerThread extends Thread {
                 pump.isConnected = false;
                 pump.lastMessageTime = System.currentTimeMillis();
                 log.debug("Disconnected from GATT server.");
-                mRunThread = false;
+                mRunBluetoothThread = false;
             }
         }
 
@@ -215,7 +236,7 @@ public class BluetoothWorkerThread extends Thread {
     }
 
     protected void disconnect() {
-        mRunThread = false;
+        mRunBluetoothThread = false;
         if (mBluetoothGatt != null) {
             try {
                 mBluetoothGatt.disconnect();
@@ -231,10 +252,6 @@ public class BluetoothWorkerThread extends Thread {
             }
         }
         mBluetoothGatt = null;
-        try {
-            System.runFinalization();
-        } catch (Exception e) {log.error("Thread exception: " + e);}
-        log.debug("Stopping OThread");
     }
 
     /* Handle inbound bluetooth messages */
@@ -262,6 +279,7 @@ public class BluetoothWorkerThread extends Thread {
             default:
                 log.debug("messageHandler: Failed to interpret command");
         }
+        log.debug("Continuing to next action");
         performNextAction();
     }
 
@@ -271,7 +289,6 @@ public class BluetoothWorkerThread extends Thread {
                 Character.toString(MedtronicPump.ESP_BATTERY).length() + 1,
                 Character.toString(MedtronicPump.ESP_BATTERY).length() + 4)); // TODO is this necessary??
         uploadToNS(MedtronicPump.BT_COMM_CONFIRMED, message);
-        pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
     private void gotBolusStatus(String message) {
@@ -282,7 +299,6 @@ public class BluetoothWorkerThread extends Thread {
         pump.isBolusConfirmed = true;
         dbCommandConfirmed(MedtronicPump.ANDROID_BOLUS); // Marks command as confirmed
         uploadToNS(MedtronicPump.BT_COMM_CONFIRMED, message);
-        pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
     private void gotTempStatus(String message) { // Confirm pump temp basal status matches simulated status
@@ -294,7 +310,6 @@ public class BluetoothWorkerThread extends Thread {
         pump.isTempActionConfirmed = true;
         dbCommandConfirmed(MedtronicPump.ANDROID_TEMP); // Marks command as confirmed
         uploadToNS(MedtronicPump.BT_COMM_CONFIRMED, message);
-        pump.isReadyForMessage = true; // Message processed, ready to continue
     }
 
     private void gotSleepOk(String message) { // Pump confirmed sleep command, pump is sleeping
@@ -316,24 +331,30 @@ public class BluetoothWorkerThread extends Thread {
 
     /* Check pump settings and send commands */
     private void performNextAction() {
-        if (mSendMessageAttempts < 20) {
-            switch (mActionState) {
-                case 0: // Wait for pump wake signal - When received, send ping (Pump wake, when isDeviceSleeping is false)
-                    checkStatus();
-                    break;
-                case 1: // Pump has confirmed that it's awake, if battery was received (isReadyForNextMessage is true)
-                    checkBolus();
-                    break;
-                case 2: // Check if temp basal is to be set or current temp basal is to be canceled
-                    checkTemp();
-                    break;
-                case 3: // Bolus and temp set, no more commands to process - Put pump to sleep
-                    checkSleep();
-                    break;
-            }
-        } else {
-
+        //if (mSendMessageAttempts < 20) {
+        log.debug("performNextAction on action: " + mActionState);
+        switch (mActionState) {
+            case 0: // Wait for pump wake signal - When received, send ping (Pump wake, when isDeviceSleeping is false)
+                checkStatus();
+                break;
+            case 1: // Pump has confirmed that it's awake, if battery was received (isReadyForNextMessage is true)
+                checkBolus();
+                break;
+            case 2: // Check if temp basal is to be set or current temp basal is to be canceled
+                checkTemp();
+                break;
+            case 3: // Bolus and temp set, no more commands to process - Put pump to sleep
+                checkSleep();
+                break;
         }
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            log.error("ConnectThread got interrupted with error: " + e);
+        }
+        //} else {
+
+        //}
     }
 
     private void checkStatus() {
@@ -347,67 +368,69 @@ public class BluetoothWorkerThread extends Thread {
 
     private void checkBolus() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isReadyForMessage) {
-            if (pump.isBolusSendt) {
-                if (pump.isBolusConfirmed) { // Check if bolus command is confirmed
-                    resetBolus();
-                    mActionState = 2; // Bolus send and confirmed by pump, proceed
-                } else { // Bolus command not confirmed, resend
-                    sendCommand(MedtronicPump.ANDROID_BOLUS);
-                    //sleepThread(60000L);
-                }
-            } else if (pump.deliverBolus) { // Check if there is any bolus to be delivered
+        if (pump.isBolusSendt) {
+            if (pump.isBolusConfirmed) { // Check if bolus command is confirmed
+                log.debug("checkBolus: bolus set");
+                resetBolus();
+                mActionState = 2; // Bolus send and confirmed by pump, proceed
+                performNextAction();
+            } else { // Bolus command not confirmed, resend
+                log.debug("checkBolus: setting bolus again");
                 sendCommand(MedtronicPump.ANDROID_BOLUS);
                 //sleepThread(60000L);
-            } else { // No bolus to deliver, proceed
-                mActionState = 2;
             }
+        } else if (pump.deliverBolus) { // Check if there is any bolus to be delivered
+            log.debug("checkBolus: setting bolus");
+            sendCommand(MedtronicPump.ANDROID_BOLUS);
+            //sleepThread(60000L);
+        } else { // No bolus to deliver, proceed
+            mActionState = 2;
+            log.debug("checkBolus: no bolus to deliver");
+            performNextAction();
         }
     }
 
     private void checkTemp() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isReadyForMessage) {
-            if (pump.isTempActionSendt) {
-                if (pump.isTempActionConfirmed) {
-                    resetTemp();
-                    mActionState = 3; // Bolus send and confirmed by pump, proceed
-                } else { // Temp action not confirmed, resend
-                    sendCommand(MedtronicPump.ANDROID_TEMP);
-                    //sleepThread(60000L);
-                }
-            } else if (pump.newTempAction) { // Check if there is any bolus to be delivered
+        if (pump.isTempActionSendt) {
+            if (pump.isTempActionConfirmed) {
+                resetTemp();
+                mActionState = 3; // Bolus send and confirmed by pump, proceed
+                performNextAction();
+            } else { // Temp action not confirmed, resend
                 sendCommand(MedtronicPump.ANDROID_TEMP);
                 //sleepThread(60000L);
-            } else { // No temp action to be send, proceed
-                mActionState = 3;
             }
+        } else if (pump.newTempAction) { // Check if there is any bolus to be delivered
+            sendCommand(MedtronicPump.ANDROID_TEMP);
+            //sleepThread(60000L);
+        } else { // No temp action to be send, proceed
+            mActionState = 3;
+            performNextAction();
         }
     }
 
     private void checkSleep() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isReadyForMessage) {
-            if (pump.isSleepSendt) {
-                if (pump.isSleepConfirmed) {
-                    resetSleep();
-                    //sleepThread(50L);
-                    //pump.runCommandThread = false;
-                    mActionState = 0;
-                    //if (mSerialIOThread != null) {
-                    //    mSerialIOThread.disconnect();
-                    //    log.debug("Thread disconnecting thread");
-                    //}
-                    //return;
-                    disconnect();
-                } else {
-                    sendCommand(MedtronicPump.ANDROID_SLEEP);
-                    //sleepThread(100L);
-                }
+        if (pump.isSleepSendt) {
+            if (pump.isSleepConfirmed) {
+                resetSleep();
+                //sleepThread(50L);
+                //pump.runCommandThread = false;
+                mActionState = 0;
+                //if (mSerialIOThread != null) {
+                //    mSerialIOThread.disconnect();
+                //    log.debug("Thread disconnecting thread");
+                //}
+                //return;
+                disconnect();
             } else {
                 sendCommand(MedtronicPump.ANDROID_SLEEP);
                 //sleepThread(100L);
             }
+        } else {
+            sendCommand(MedtronicPump.ANDROID_SLEEP);
+            //sleepThread(100L);
         }
     }
 

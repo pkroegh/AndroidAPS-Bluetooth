@@ -22,7 +22,6 @@ public class MedtronicPump {
     public static final String ESP_UUID_CHARACTERISTIC_RX = "848909c1-a6f0-4fa4-ac2a-06b9a9d4eb60";
 
     public static final char ESP_BATTERY = 'e';
-    public static final char ESP_WAKE = 'w';
     public static final char ESP_BOLUS = 'b';
     public static final char ESP_TEMP = 't';
     public static final char ESP_SLEEP = 's';
