@@ -110,6 +110,7 @@ public class BluetoothWorkerThread extends Thread {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             MedtronicPump pump = MedtronicPump.getInstance();
             if (newState == BluetoothProfile.STATE_CONNECTED) {
+                pump.failedToReconnect = false;
                 pump.isConnected = true;
                 pump.isConnecting = false;
                 pump.lastMessageTime = System.currentTimeMillis();
@@ -118,7 +119,11 @@ public class BluetoothWorkerThread extends Thread {
                 log.debug("Attempting to start service discovery:" +
                         mBluetoothGatt.discoverServices());
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                if (!pump.isConnected) {
+                    pump.failedToReconnect = true;
+                }
                 pump.isConnected = false;
+                pump.isConnecting = false;
                 pump.lastMessageTime = System.currentTimeMillis();
                 log.debug("Disconnected from GATT server.");
                 mRunBluetoothThread = false;

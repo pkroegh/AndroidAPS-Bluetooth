@@ -98,7 +98,9 @@ public class ConnectThread extends Thread {
 
     private boolean isTimeToConnect(){
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (!pump.isConnected && !pump.isConnecting) {
+        if (pump.failedToReconnect && !pump.isConnecting) {
+            return true;
+        } else if (!pump.isConnected && !pump.isConnecting) {
             return ConnectionUtil.isTimeDifferenceLarger(pump.lastMessageTime,
                     pump.wakeInterval);
         }
