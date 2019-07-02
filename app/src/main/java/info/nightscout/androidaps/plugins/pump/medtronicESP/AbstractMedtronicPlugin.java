@@ -93,7 +93,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
     @Override
     public long lastDataTime() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.failedToReconnect) {
+        if (pump.connectionAttempts >= MainApp.gi(R.integer.medtronic_connection_attempts_alarm_threshold)) {
             return pump.lastMessageTime;
         } else {
             return System.currentTimeMillis();

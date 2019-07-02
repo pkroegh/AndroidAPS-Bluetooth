@@ -20,6 +20,7 @@ import java.util.UUID;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventUpdateGUI;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.utils.ConnectionUtil;
 import info.nightscout.androidaps.utils.ToastUtils;
 
@@ -36,7 +37,7 @@ public class ConnectThread extends Thread {
 
     BluetoothAdapter mBluetoothAdapter;
     BluetoothLeScanner bleScanner;
-    BluetoothDevice bleDevice;
+    // BluetoothDevice bleDevice;
 
     private BluetoothWorkerThread mBLEWorkerThread;
 
@@ -90,12 +91,21 @@ public class ConnectThread extends Thread {
     }
 
     private void maintainConnection() {
-        if (isTimeToConnect() && !mScanRunning) { // It's time to reconnect after sleep
-            startScanForDevice();
+        MedtronicPump pump = MedtronicPump.getInstance();
+        if (!mScanRunning) {
+            if (!pump.isConnected || !pump.isConnecting) {
+                if (pump.failedToConnect || isTimeToConnect()) {
+                    startScanForDevice();
+                } else {
+                    sleepThread(100);
+                }
+            } else {
+                sleepThread(100);
+            }
         }
-        //isPumpTimedOut(); // Check if pump is timed out
     }
 
+    /*
     private boolean isTimeToConnect(){
         MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.failedToReconnect && !pump.isConnecting) {
@@ -105,6 +115,13 @@ public class ConnectThread extends Thread {
                     pump.wakeInterval);
         }
         return false;
+    }
+    */
+
+    private boolean isTimeToConnect() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        return ConnectionUtil.isTimeDifferenceLarger(pump.lastMessageTime,
+                pump.wakeInterval);
     }
 
     private void startScanForDevice() {
@@ -133,24 +150,25 @@ public class ConnectThread extends Thread {
                     }
                     log.debug("Found device with address: " + device.getAddress() +
                             " and name: " + name);
-                            /*
-                            ParcelUuid[] uuids = device.getUuids();
-                            log.debug("Device has uuids: " + uuids);
-                            if (uuids != null) {
-                                for (ParcelUuid parcelUUID : uuids) {
-                                    String stringUUID = parcelUUID.getUuid().toString();
-                                    log.debug(device.getAddress() + "has UUID: " + stringUUID);
-                                    if (MedtronicPump.ESP_UUID_SERVICE.equals(stringUUID)) {
-                                        log.debug(device.getAddress() + "is Medtronic pump.");
-                                    }
-                                }
+
+                    ParcelUuid[] uuids = device.getUuids();
+                    log.debug("Device has uuids: " + uuids);
+                    if (uuids != null) {
+                        for (ParcelUuid parcelUUID : uuids) {
+                            String stringUUID = parcelUUID.getUuid().toString();
+                            log.debug(device.getAddress() + "has UUID: " + stringUUID);
+                            if (MedtronicPump.ESP_UUID_SERVICE.equals(stringUUID)) {
+                                log.debug(device.getAddress() + "is Medtronic pump.");
                             }
-                            */
+                        }
+                    }
+
                     if (pump.mDevName.equals(name)) {
                         pump.isConnecting = true;
                         log.debug("Device matches pump name");
                         //bleDevice = device;
                         spawnBluetoothWorker(device);
+                        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
                     }
                 }
                 //super.onScanResult(callbackType, result);
@@ -171,11 +189,7 @@ public class ConnectThread extends Thread {
             if (mBLEWorkerThread != null) {
                 if (!mBLEWorkerThread.getRunConnectThread()) {
                     mBLEWorkerThread.setRunConnectThread(false);
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        log.error("ConnectThread got interrupted with error: " + e);
-                    }
+                    sleepThread(200);
                     log.debug("Creating BluetoothWorkerThread");
                     mBLEWorkerThread = new BluetoothWorkerThread(device);
                 }
@@ -210,6 +224,14 @@ public class ConnectThread extends Thread {
             System.runFinalization();
         } catch (Exception e) {
             log.error("Thread exception: " + e);
+        }
+    }
+
+    private void sleepThread(long time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            log.error("ConnectThread got interrupted with error: " + e);
         }
     }
 

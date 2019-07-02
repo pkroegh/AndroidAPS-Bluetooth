@@ -52,15 +52,18 @@ public class MedtronicPump {
 
     public boolean isConnecting = false; // True when waiting for connection to device
     public boolean isConnected = false; // True when connection has been established with device
+    public boolean failedToConnect = false; // True when failed to connect to device, will trigger another connection attempt
     public boolean isSleeping = false; // True when the pump is sleeping
     public long lastMessageTime = 0; // Time of last message (used to calculate when to run scan after sleep)
     public boolean isReadyForMessage = false; // Pump ready for next command
 
-    public boolean failedToReconnect = false; // Pump failed to reconnect after wake
+    public int connectionAttempts = 0; // Connection attempts between successful connections
 
     public double reservoirRemainingUnits = 50;
     public int batteryRemaining = 50;
     public double baseBasal;
+
+    public int mActionState = 0;
 
     public int wakeInterval = 1;
     public boolean isWakeOk = false; // True, when wake interval in pump matches preferences

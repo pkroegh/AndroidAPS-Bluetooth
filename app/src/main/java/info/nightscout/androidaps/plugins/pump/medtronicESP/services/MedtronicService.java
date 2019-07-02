@@ -1,38 +1,15 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP.services;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.Handler;
-import android.os.ParcelUuid;
 import android.os.SystemClock;
 
 import com.squareup.otto.Subscribe;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Vector;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventESPStatusUpdate;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.utils.ConnectionUtil;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventUpdateGUI;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.ToastUtils;
@@ -69,12 +46,13 @@ public class MedtronicService extends AbstractMedtronicService {
         if (!isPasswordSet()) return;
         resetPumpInstance();
         startThread();
-        MainApp.bus().post(new EventESPStatusUpdate());
+        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
     }
 
     public void disconnectESP() {
         stopThread();
-        MainApp.bus().post(new EventESPStatusUpdate());
+        resetPumpInstance();
+        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
     }
 
     void killService() {} //TODO add feature
@@ -98,6 +76,7 @@ public class MedtronicService extends AbstractMedtronicService {
 
     private void resetPumpInstance() {
         MedtronicPump pump = MedtronicPump.getInstance();
+        pump.connectionAttempts = 0;
         pump.isConnecting = false;
         pump.isConnected = false;
         pump.isSleeping = false;

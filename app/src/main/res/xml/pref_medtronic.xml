@@ -17,7 +17,7 @@
             -->
 
         <EditTextPreference
-            android:inputType="textPassword"
+            android:inputType="text"
             android:key="@string/key_medtronicESP_password"
             android:title="@string/medtronicESP_password_title"/>
 
