@@ -216,7 +216,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         JSONObject extended = new JSONObject();
         try {
             battery.put("percent", pump.batteryRemaining);
-            status.put("status", pump.isSleeping ? "suspended" : "normal");
+            status.put("status", sMedtronicService.getRunThread() ? "suspended" : "normal");
             status.put("timestamp", DateUtil.toISOString(pump.lastMessageTime));
             extended.put("Version", BuildConfig.VERSION_NAME + "-" + BuildConfig.BUILDVERSION);
             TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);

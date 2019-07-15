@@ -1348,6 +1348,7 @@
         <item quantity="other">%1$d minutes</item>
     </plurals>
 
+    <!-- Medtronic ESP text strings -->
     <string name="medtronicESP">Medtronic ESP</string>
     <string name="medtronicESP_shortname">MESP</string>
     <string name="description_pump_medtronicESP_r">Pump integration for Medtronic pumps using an ESP microcontroller</string>
@@ -1378,40 +1379,44 @@
 
     <integer name="medtronic_connection_attempts_alarm_threshold" translatable="false">30</integer>
 
-    <string name="medtronicESP_label">Medtronic ESP pump</string>
-    <string name="medtronicESP_service_status">Service status</string>
-    <string name="medtronicESP_service_null">Service not running</string>
-    <string name="medtronicESP_service_running">Running</string>
+    <string name="med_settings_title">Medtronic ESP pump</string>
 
-    <string name="medtronicESP_status_label">Pump status</string>
-    <string name="medtronicESP_status_failed">Failed to connect to pump!</string>
-    <string name="medtronicESP_connected_label">Progress</string>
-    <string name="medtronicESP_connected_send_sleep">Setting sleep</string>
-    <string name="medtronicESP_connected_send_temp">Setting temp</string>
-    <string name="medtronicESP_connected_send_bolus">Setting bolus</string>
-    <string name="medtronicESP_connected_send_ping">Sending ping</string>
+    <string name="med_service_label">Service status</string>
+    <string name="med_service_null">Service not running</string>
+    <string name="med_service_running">Running</string>
+    <string name="med_service_faking">Faking connection</string>
+    <string name="med_service_halted">Halted</string>
 
-    <string name="medtronicESP_ESPfirstConnect">Connecting…</string>
-    <string name="medtronicESP_connectionStatus">Connection status</string>
-    <string name="medtronicESP_connectionAttempts">Attempt </string>
-    <string name="medtronicESP_sleeping_since">Sleeping since </string>
-    <string name="medtronicESP_ESPsleeping">Sleeping</string>
-    <string name="medtronicESP_ESPactive">Active</string>
-    <string name="medtronicESP_ESPhalted">Halted</string>
-    <string name="medtronicESP_faking">Faking connection</string>
+    <string name="med_connection_label">Connection status</string>
+    <string name="med_connection_sleeping_since">Sleeping since</string>
+    <string name="med_connection_sleeping">Sleeping</string>
+    <string name="med_connection_connecting">Connecting…</string>
+    <string name="med_connection_connected">Connected</string>
+    <string name="med_connection_scanning">Scanning for device…</string>
+    <string name="med_connection_failed">Failed to connect to pump!</string>
 
-    <string name="medtornicESP_scanning">Scanning for device...</string>
+    <string name="med_connection_ext_label_sleeping">Time to next wake</string>
+    <string name="med_connection_ext_label_connecting">Bluetooth status</string>
+    <string name="med_connection_ext_connecting">Attempt </string>
+    <string name="med_connection_ext_label_connected">Progress</string>
+    <string name="med_connection_ext_sleep">Setting sleep</string>
+    <string name="med_connection_ext_temp">Setting temp</string>
+    <string name="med_connection_ext_bolus">Setting bolus</string>
+    <string name="med_connection_ext_ping">Sending ping</string>
+    <string name="med_connection_ext_label_scanning">Scan status</string>
+    <string name="med_connection_ext_scan_active">Scan active</string>
+    <string name="med_connection_ext_scan_stopped">Scan stopped</string>
 
-    <string name="medtronicESP_wake_label">Time to next wake</string>
     <string name="medtronicESP_battery_label">Remaining battery</string>
     <string name="medtronicESP_lastconnect_label">Last connect</string>
     <string name="medtronicESP_seperator">:</string>
 
 
-    <string name="medtronicESP_button_label_connect">Start connecting</string>
-    <string name="medtronicESP_button_label_stop">Stop connecting</string>
+    <string name="med_button_label_connect">Start connecting</string>
+    <string name="med_button_label_stop">Stop connecting</string>
 
-
+    <string name="med_button_label_refresh">Refresh status</string>
 
     <string name="medtronicESP_noPassOrDevice">No password set</string>
+
 </resources>

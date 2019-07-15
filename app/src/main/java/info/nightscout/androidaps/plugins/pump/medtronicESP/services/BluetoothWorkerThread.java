@@ -16,7 +16,8 @@ import java.util.UUID;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventUpdateGUI;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventStatusChanged;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.utils.TimeUtil;
 
 public class BluetoothWorkerThread extends Thread {
     //private static Logger log = LoggerFactory.getLogger(L.PUMPBTCOMM);
@@ -77,7 +78,7 @@ public class BluetoothWorkerThread extends Thread {
     public final void run() {
         initializeThread();
         while (mRunBluetoothThread) {
-
+            maintainConnection();
         }
         terminateThread();
     }
@@ -88,11 +89,29 @@ public class BluetoothWorkerThread extends Thread {
     }
 
     private void terminateThread() {
+        if (MedtronicPump.getInstance().mActionState != 0) {
+            MedtronicPump.getInstance().mActionState = 0;
+        }
         disconnect();
         try {
             System.runFinalization();
         } catch (Exception e) {log.error("Thread exception: " + e);}
         log.debug("Stopping BluetoothWorkerThread");
+    }
+
+    private void maintainConnection() {
+        /*
+        if (MedtronicPump.getInstance().getConnected() && isTimedout()) {
+            log.debug("Communication has timed out, stopping BluetoothWorkerThread");
+            mRunBluetoothThread = false;
+        }
+        */
+    }
+
+    private boolean isTimedout() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        return TimeUtil.isTimeDiffLargerMilli(pump.lastMessageTime,
+                10000);
     }
 
     private void connect() {
@@ -113,30 +132,38 @@ public class BluetoothWorkerThread extends Thread {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 pump.connectionAttempts = 0;
                 pump.failedToConnect = false;
-                pump.isConnected = true;
-                pump.isConnecting = false;
+                pump.setConnected(true);
+                pump.setConnecting(false);
                 pump.lastMessageTime = System.currentTimeMillis();
                 log.debug("Connected to GATT server.");
                 // Attempts to discover services after successful connection.
                 log.debug("Attempting to start service discovery:" +
                         mBluetoothGatt.discoverServices());
+                MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_CONNECTED)); // Update fragment, with new pump status
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                if (!pump.isConnected) {
+                if (!pump.getConnected()) {
                     if (mConnectionAttempts >= 10) {
                         pump.connectionAttempts = pump.connectionAttempts + 1;
                         log.debug("Failed to connect to GATT, retrying...");
                         mConnectionAttempts = mConnectionAttempts + 1;
                         connect();
+                        MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_CONNECTING)); // Update fragment, with new pump status
                     } else {
                         log.debug("Failed to connect to GATT 10 times");
                         failedToSetupBLE();
                     }
                 } else {
-                    pump.isConnected = false;
-                    pump.isConnecting = false;
+                    if (pump.mActionState == 3) {
+                        pump.mActionState = 0;
+                        pump.setSleeping(true);
+                        log.debug("Pump failed to confirm sleep");
+                    }
+                    pump.setConnecting(false);
+                    pump.setConnected(false);
                     pump.lastMessageTime = System.currentTimeMillis();
                     log.debug("Disconnected from GATT server.");
                     mRunBluetoothThread = false;
+                    MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_SLEEPING)); // Update fragment, with new pump status
                 }
             }
         }
@@ -191,9 +218,10 @@ public class BluetoothWorkerThread extends Thread {
             MedtronicPump pump = MedtronicPump.getInstance();
             pump.connectionAttempts = pump.connectionAttempts + 1;
             pump.failedToConnect = true;
-            pump.isConnecting = false;
-            pump.isConnected = false;
+            pump.setConnecting(false);
+            pump.setConnected(false);
             mRunBluetoothThread = false;
+            MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_FAILED)); // Update fragment, with new pump status
         }
 
         /*
@@ -287,6 +315,7 @@ public class BluetoothWorkerThread extends Thread {
 
     /* Handle inbound bluetooth messages */
     private synchronized void handleMessage(String message) {
+        boolean failed = false;
         log.debug("Got message from IOThread: " + message);
         char action = message.charAt(0);
         log.debug("messageHandler on char: " + action);
@@ -308,9 +337,15 @@ public class BluetoothWorkerThread extends Thread {
                 gotSleepOk(message);
                 break;
             default:
+                failed = true;
                 log.debug("messageHandler: Failed to interpret command");
         }
-        log.debug("Continuing to next action");
+        if (!failed) {
+            MedtronicPump.getInstance().lastMessageTime = System.currentTimeMillis();
+            log.debug("Continuing to next action");
+        } else {
+            log.debug("Retrying last action");
+        }
         performNextAction();
     }
 
@@ -378,7 +413,7 @@ public class BluetoothWorkerThread extends Thread {
                 checkSleep();
                 break;
         }
-        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
+        MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_CONNECTED)); // Update fragment, with new pump status
         try {
             Thread.sleep(200);
         } catch (InterruptedException e) {
@@ -391,7 +426,7 @@ public class BluetoothWorkerThread extends Thread {
 
     private void checkStatus() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isConnected) {
+        if (pump.getConnected()) {
             sendCommand(MedtronicPump.ANDROID_PING);
             //sleepThread(50L);
             pump.mActionState = 1;
@@ -487,9 +522,9 @@ public class BluetoothWorkerThread extends Thread {
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.isSleepSendt = false;
         pump.isSleepConfirmed = false;
-        pump.isReadyForMessage = false;
-        pump.isSleeping = true;
+        pump.setSleeping(true);
         mSendMessageAttempts = 0;
+        MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_SLEEPING)); // Update fragment, with new pump status
     }
 
     private void sendCommand(char action) {

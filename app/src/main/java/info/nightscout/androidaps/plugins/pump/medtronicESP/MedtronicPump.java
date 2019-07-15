@@ -17,6 +17,34 @@ public class MedtronicPump {
         return instance;
     }
 
+    public synchronized boolean getScanning() {
+        return isScanning;
+    }
+    public synchronized void setScanning(boolean state) {
+        isScanning = state;
+    }
+
+    public synchronized boolean getConnecting() {
+        return isConnecting;
+    }
+    public synchronized void setConnecting(boolean state) {
+        isConnecting = state;
+    }
+
+    public synchronized boolean getConnected() {
+        return isConnected;
+    }
+    public synchronized void setConnected(boolean state) {
+        isConnected = state;
+    }
+
+    public synchronized boolean getSleeping() {
+        return isSleeping;
+    }
+    public synchronized void setSleeping(boolean state) {
+        isSleeping = state;
+    }
+
     public static final String ESP_UUID_SERVICE = "27652cbb-76f0-45eb-bc37-826ca7315457";
     public static final String ESP_UUID_CHARACTERISTIC_TX = "8983c612-5b25-43cd-85f0-391f8dd3cb67";
     public static final String ESP_UUID_CHARACTERISTIC_RX = "848909c1-a6f0-4fa4-ac2a-06b9a9d4eb60";
@@ -42,22 +70,22 @@ public class MedtronicPump {
     public static final String BT_COMM_SEND = "COMMAND_SEND";
     public static final String BT_COMM_CONFIRMED = "COMMAND_CONFIRMED";
 
+    // Preference defined variables
     public boolean isFakingConnection = false; // If true, run plugin as normal, but without ESP connection
     public boolean isUsingExtendedBolus = false; // If true, use extended bolus
     public boolean isUploadingToNS = false; // If true, upload commands send to NS and conformations of commands
-
-    public String mDevName =  "MedESP";
-
     public String pump_password = null;
 
-    public boolean isConnecting = false; // True when waiting for connection to device
-    public boolean isConnected = false; // True when connection has been established with device
-    public boolean failedToConnect = false; // True when failed to connect to device, will trigger another connection attempt
-    public boolean isSleeping = false; // True when the pump is sleeping
-    public long lastMessageTime = 0; // Time of last message (used to calculate when to run scan after sleep)
-    public boolean isReadyForMessage = false; // Pump ready for next command
+    public String mDevName =  "MedESP"; //TODO: Remove
 
+    private boolean isScanning = false; // True when scanning for devices
+    private boolean isConnecting = false; // True when waiting for connection to device
+    private boolean isConnected = false; // True when connection has been established with device
+    private boolean isSleeping = false; // True when the pump is sleeping
+
+    public boolean failedToConnect = false; // True when failed to connect to device, will trigger another connection attempt
     public int connectionAttempts = 0; // Connection attempts between successful connections
+    public long lastMessageTime = 0; // Time of last message (used to calculate when to run scan after sleep)
 
     public double reservoirRemainingUnits = 50;
     public int batteryRemaining = 50;
@@ -86,4 +114,13 @@ public class MedtronicPump {
 
     public double bolusStep = 0.1;
     public double basalStep = 0.1;
+
+    // Event action indicators
+    public static final char EVENT_FAILED = 'F'; // Failed to connect to device
+    public static final char EVENT_SLEEPING = 'S'; // Device is sleeping
+    public static final char EVENT_CONNECTING = 'C'; // Connecting to device
+    public static final char EVENT_CONNECTED = 'L'; // Linked to device, connected
+    public static final char EVENT_SCAN = 'B'; // Scan status changed
+
+
 }

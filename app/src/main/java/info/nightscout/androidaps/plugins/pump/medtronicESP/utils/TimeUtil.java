@@ -11,15 +11,28 @@ import info.nightscout.androidaps.utils.SP;
 
 import static info.nightscout.androidaps.utils.DateUtil.now;
 
-public class ConnectionUtil {
+public class TimeUtil {
     public static final long minToMillisec = 60000;
 
-    /** Check if more then a given time has passed in minutes
-     * @param lastTime   Time to compare with threshold
-     * @param threshold  Threshold
-     * @return True if time threshold has been passed
+    /**
+     * Check if more then a given time has passed in minutes.
+     *
+     * @param lastTime   Time to compare with threshold.
+     * @param threshold  Threshold.
+     * @return True if time threshold has been passed.
      */
-    public static boolean isTimeDifferenceLarger(long lastTime, int threshold) {
+    public static boolean isTimeDiffLargerMin(long lastTime, int threshold) {
         return (System.currentTimeMillis() - lastTime) >= (threshold * minToMillisec);
+    }
+
+    /**
+     * Check if more then a given time has passed in minutes.
+     *
+     * @param lastTime   Time to compare with threshold.
+     * @param threshold  Threshold.
+     * @return True if time threshold has been passed.
+     */
+    public static boolean isTimeDiffLargerMilli(long lastTime, long threshold) {
+        return (System.currentTimeMillis() - lastTime) >= threshold;
     }
 }

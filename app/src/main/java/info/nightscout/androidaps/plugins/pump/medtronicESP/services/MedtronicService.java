@@ -8,11 +8,10 @@ import com.squareup.otto.Subscribe;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventPreferenceChange;
+import info.nightscout.androidaps.events.EventPumpStatusChanged;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventUpdateGUI;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.SP;
-import info.nightscout.androidaps.utils.ToastUtils;
 /*
  *   Created by ldaug99 on 2019-02-17
  */
@@ -46,13 +45,13 @@ public class MedtronicService extends AbstractMedtronicService {
         if (!isPasswordSet()) return;
         resetPumpInstance();
         startThread();
-        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
+        MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTING)); // Update fragment, with new pump status
     }
 
     public void disconnectESP() {
         stopThread();
         resetPumpInstance();
-        MainApp.bus().post(new EventUpdateGUI()); // Update fragment, with new pump status
+        MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.DISCONNECTING)); // Update fragment, with new pump status
     }
 
     void killService() {} //TODO add feature
@@ -67,8 +66,6 @@ public class MedtronicService extends AbstractMedtronicService {
     private boolean isPasswordSet() {
         updatePreferences();
         if (MedtronicPump.getInstance().pump_password == null) {
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(),
-                    MainApp.gs(R.string.medtronicESP_noPassOrDevice));
             return false;
         }
         return true;
@@ -77,10 +74,9 @@ public class MedtronicService extends AbstractMedtronicService {
     private void resetPumpInstance() {
         MedtronicPump pump = MedtronicPump.getInstance();
         pump.connectionAttempts = 0;
-        pump.isConnecting = false;
-        pump.isConnected = false;
-        pump.isSleeping = false;
-        pump.isReadyForMessage = false;
+        pump.setConnected(false);
+        pump.setConnecting(false);
+        pump.setSleeping(false);
     }
 
     private void startThread() {
