@@ -3,13 +3,21 @@
     <PreferenceCategory
         android:title="@string/medtronicESP_settings">
 
+        <!--
+        <EditTextPreference
+            android:inputType="text"
+            android:key="@string/key_medtronicESP_bt_name"
+            android:title="@string/medtronicESP_bt_name_title"/>
+            -->
+        <!--
         <info.nightscout.androidaps.plugins.pump.medtronicESP.pref.BluetoothDevicePreference
             android:dialogTitle="@string/medtronicESP_bt_name_title"
             android:key="@string/key_medtronicESP_bt_name"
             android:title="@string/medtronicESP_bt_name_title" />
+            -->
 
         <EditTextPreference
-            android:inputType="textPassword"
+            android:inputType="text"
             android:key="@string/key_medtronicESP_password"
             android:title="@string/medtronicESP_password_title"/>
 

@@ -27,7 +27,8 @@ import info.nightscout.androidaps.utils.ToastUtils;
  */
 
 public abstract class AbstractMedtronicService extends Service {
-    protected Logger log = LoggerFactory.getLogger(L.PUMP);
+    //protected Logger log = LoggerFactory.getLogger(L.PUMP);
+    protected Logger log = LoggerFactory.getLogger("Medtronic");
 
     protected IBinder mBinder; // Binder to plugin
 
@@ -35,7 +36,6 @@ public abstract class AbstractMedtronicService extends Service {
     public abstract void disconnectESP();
 
     public abstract boolean getRunThread();
-    public abstract void setRunThread(boolean state);
 
     public abstract void bolus(double bolus);
     public abstract void tempBasal(double absoluteRate, int durationInMinutes);
@@ -43,31 +43,10 @@ public abstract class AbstractMedtronicService extends Service {
     public abstract void extendedBolus(double insulin, int durationInHalfHours); // TODO implement this
     public abstract void extendedBolusStop(); // TODO implement this
 
-    public abstract void updatePreferences();
-
-    abstract void killService();
-
     public void connect() {} //TODO add connect feature
-    public boolean isConnected() {
-        return !MedtronicPump.getInstance().loopHandshake;
-    }
     public void disconnect() {} //TODO add disconnect feature
 
     public IBinder onBind(Intent intent) {
         return mBinder;
-    }
-
-    public boolean isFakingConnection() {
-        return MedtronicPump.getInstance().isFakingConnection;
-    }
-
-    public boolean isUsingExtendedBolus() {
-        return MedtronicPump.getInstance().isUsingExtendedBolus;
-    }
-
-    public void stopService() {
-        disconnectESP();
-        killService();
-        this.stopSelf();
     }
 }

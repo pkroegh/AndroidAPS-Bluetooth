@@ -18,7 +18,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="20dp"
-                android:text="@string/medtronicESP_label"
+                android:text="@string/med_settings_title"
                 android:textAppearance="?android:attr/textAppearanceLarge" />
 
             <!-- Service status -->
@@ -34,7 +34,7 @@
                     android:layout_weight="1"
                     android:gravity="end"
                     android:paddingRight="5dp"
-                    android:text="@string/medtronicESP_service_status"
+                    android:text="@string/med_service_label"
                     android:textSize="14sp" />
 
                 <TextView
@@ -48,7 +48,7 @@
                     android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/medtronicESP_service"
+                    android:id="@+id/med_service_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -67,7 +67,7 @@
                 android:layout_marginTop="5dp"
                 android:background="@color/listdelimiter" />
 
-            <!-- Bluetooth client name -->
+            <!-- Connection status -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -79,7 +79,7 @@
                     android:layout_weight="1"
                     android:gravity="end"
                     android:paddingRight="5dp"
-                    android:text="@string/medtronicESP_client_label"
+                    android:text="@string/med_state_label_state"
                     android:textSize="14sp" />
 
                 <TextView
@@ -93,7 +93,7 @@
                     android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/medtronicESP_client"
+                    android:id="@+id/med_connection_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -112,19 +112,20 @@
                 android:layout_marginTop="5dp"
                 android:background="@color/listdelimiter" />
 
-            <!-- ESP status -->
+            <!-- Connection status extended -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/med_connection_ext_status_label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="end"
                     android:paddingRight="5dp"
-                    android:text="@string/medtronicESP_status_label"
+                    android:text="@string/med_progress_label_sleeping"
                     android:textSize="14sp" />
 
                 <TextView
@@ -138,97 +139,7 @@
                     android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/medtronicESP_status"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="start"
-                    android:paddingLeft="5dp"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="fill_parent"
-                android:layout_height="2dip"
-                android:layout_marginBottom="5dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp"
-                android:layout_marginTop="5dp"
-                android:background="@color/listdelimiter" />
-
-            <!-- Time to next wake -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:paddingRight="5dp"
-                    android:text="@string/medtronicESP_wake_label"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="5dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0"
-                    android:gravity="center_horizontal"
-                    android:paddingEnd="2dp"
-                    android:paddingStart="2dp"
-                    android:text="@string/medtronicESP_seperator"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/medtronicESP_wake"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="start"
-                    android:paddingLeft="5dp"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="fill_parent"
-                android:layout_height="2dip"
-                android:layout_marginBottom="5dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp"
-                android:layout_marginTop="5dp"
-                android:background="@color/listdelimiter" />
-
-            <!-- Last connect -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:paddingRight="5dp"
-                    android:text="@string/medtronicESP_lastconnect_label"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="5dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0"
-                    android:gravity="center_horizontal"
-                    android:paddingEnd="2dp"
-                    android:paddingStart="2dp"
-                    android:text="@string/medtronicESP_seperator"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/medtronicESP_lastconnect"
+                    android:id="@+id/med_connection_ext_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -382,7 +293,7 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/medtronicESP_button_label_connect"
+                android:text="@string/med_button_label_connect"
                 android:id="@+id/medtronicESP_button_connect" />
 
             <Button
@@ -393,8 +304,5 @@
                 android:id="@+id/medtronicESP_button_history" />
 
         </LinearLayout>
-
     </ScrollView>
-
-
 </FrameLayout>

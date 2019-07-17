@@ -37,7 +37,8 @@ import info.nightscout.androidaps.utils.DecimalFormatter;
  */
 
 public abstract class AbstractMedtronicPlugin extends PluginBase implements PumpInterface {
-    protected Logger log = LoggerFactory.getLogger(L.PUMP);
+    //protected Logger log = LoggerFactory.getLogger(L.PUMP);
+    protected Logger log = LoggerFactory.getLogger("Medtronic");
 
     AbstractMedtronicService sMedtronicService;
 
@@ -66,7 +67,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public String deviceID() {
-        return MedtronicPump.getInstance().mDevName;
+        return MedtronicPump.deviceName;
     }
 
     @Override
@@ -91,12 +92,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public long lastDataTime() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.failedToReconnect && !pump.loopHandshake) {
-            return pump.lastConnection;
-        } else {
-            return System.currentTimeMillis();
-        }
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -215,8 +211,8 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         JSONObject extended = new JSONObject();
         try {
             battery.put("percent", pump.batteryRemaining);
-            status.put("status", pump.isDeviceSleeping ? "suspended" : "normal");
-            status.put("timestamp", DateUtil.toISOString(pump.lastConnection));
+            status.put("status", sMedtronicService.getRunThread() ? "suspended" : "normal");
+            status.put("timestamp", DateUtil.toISOString(System.currentTimeMillis()));
             extended.put("Version", BuildConfig.VERSION_NAME + "-" + BuildConfig.BUILDVERSION);
             TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);
             if (tb != null) {

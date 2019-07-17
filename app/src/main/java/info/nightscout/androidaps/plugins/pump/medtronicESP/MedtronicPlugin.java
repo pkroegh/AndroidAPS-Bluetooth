@@ -1,10 +1,14 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.IBinder;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 
 import com.squareup.otto.Subscribe;
 
@@ -74,7 +78,6 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
             log.debug("MedtronicService on connect");
             MedtronicService.LocalBinder mLocalBinder = (MedtronicService.LocalBinder) service;
             sMedtronicService = mLocalBinder.getServiceInstance();
-            sMedtronicService.updatePreferences();
         }
     };
 
@@ -176,10 +179,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     @Override
     public boolean isFakingTempsByExtendedBoluses() {
-        if (sMedtronicService != null) {
-            return sMedtronicService.isUsingExtendedBolus();
-        }
-        return false;
+        return MedtronicPump.getInstance().isFakingConnection;
     }
 
     @Override
