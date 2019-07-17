@@ -79,7 +79,7 @@
                     android:layout_weight="1"
                     android:gravity="end"
                     android:paddingRight="5dp"
-                    android:text="@string/med_connection_label"
+                    android:text="@string/med_state_label_state"
                     android:textSize="14sp" />
 
                 <TextView
@@ -125,7 +125,7 @@
                     android:layout_weight="1"
                     android:gravity="end"
                     android:paddingRight="5dp"
-                    android:text="@string/med_connection_ext_label_sleeping"
+                    android:text="@string/med_progress_label_sleeping"
                     android:textSize="14sp" />
 
                 <TextView

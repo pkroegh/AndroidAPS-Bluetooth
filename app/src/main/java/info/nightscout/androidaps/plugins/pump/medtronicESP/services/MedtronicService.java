@@ -12,6 +12,7 @@ import info.nightscout.androidaps.events.EventPumpStatusChanged;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.SP;
+
 /*
  *   Created by ldaug99 on 2019-02-17
  */
@@ -90,7 +91,6 @@ public class MedtronicService extends AbstractMedtronicService {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.isFakingConnection) return;
         pump.cancelCurrentTemp = true;
-        pump.newTempAction = true;
     }
 
     public void tempBasal(double absoluteRate, int durationInMinutes) {
@@ -98,8 +98,7 @@ public class MedtronicService extends AbstractMedtronicService {
         if (pump.isFakingConnection) return;
         pump.tempBasal = absoluteRate;
         pump.tempBasalDuration = durationInMinutes;
-        pump.cancelCurrentTemp = true;
-        pump.newTempAction = true;
+        pump.cancelCurrentTemp = false;
     }
 
     public void extendedBolus(double insulin, int durationInHalfHours) {  // TODO implement this
@@ -117,7 +116,21 @@ public class MedtronicService extends AbstractMedtronicService {
     /* Preference management */
     @Subscribe
     public void onStatusEvent(final EventPreferenceChange s) {
-        MedtronicPump.updatePreferences();
+        if (MedtronicPump.updateExtBolusFromPref()) {
+            extendedBolusStop();
+        }
+        boolean fakeConnection = MedtronicPump.getInstance().isFakingConnection;
+        if (MedtronicPump.updateFakeFromPref()) {
+            if (!fakeConnection) {
+                connectESP();
+            } else {
+                disconnectESP();
+            }
+        }
+        if (MedtronicPump.updatePassFromPref()) {
+            connectESP();
+        }
+        MedtronicPump.updateNSFromPref();
     }
 
 }

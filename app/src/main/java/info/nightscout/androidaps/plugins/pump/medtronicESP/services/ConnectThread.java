@@ -37,8 +37,12 @@ public class ConnectThread extends Thread {
 
     private boolean mRunConnectThread = true;
 
+    private int wakeInterval = 1;
+
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner bleScanner;
+
+    private boolean isScanning = false;
 
     private BluetoothWorkerThread mBLEWorkerThread;
 
@@ -131,16 +135,21 @@ public class ConnectThread extends Thread {
             if (pump.sleepStartTime != 0) {
                 pump.sleepStartTime = 0;
             }
-            if (pump.connectPhase < 1 && !pump.isScanning) {
+            if (pump.connectPhase == 0) { // !pump.isScanning && !pump.isConnecting
                 pump.connectPhase = 1;
+                MedtronicPump.updateWakeIntervalFromPref();
+                sleepThread(10);
+                wakeInterval = pump.wakeInterval;
                 // Scan has not been started and device has not been found, start scan.
                 startScanForDevice();
             }
-            if (isScanTimedOut()) {
+            if (pump.connectPhase == 1 && isScanTimedOut()) {
                 // Scan has been running for 5 min, but no device was found. Alarm user.
+                pump.fatalError = true;
                 mRunConnectThread = false;
                 ConnUtil.bleError();
-                log.error("Scanned for 5 minutes without finding device.");
+                log.error("Scanned for" + String.valueOf(MedtronicPump.scanAlarmThreshold) +
+                        "minutes without finding device.");
             }
         } else {
             // Device is sleeping, update fragment and sleep thread.
@@ -152,30 +161,31 @@ public class ConnectThread extends Thread {
     private boolean isWakeIntervalPassed() {
         MedtronicPump pump = MedtronicPump.getInstance();
         return TimeUtil.isTimeDiffLargerMin(pump.sleepStartTime,
-                pump.wakeInterval);
+                wakeInterval);
     }
 
     private boolean isScanTimedOut() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        return TimeUtil.isTimeDiffLargerMin(pump.scanStartTime,
-                pump.scanAlarmThreshold);
+        return TimeUtil.isTimeDiffLargerMin(MedtronicPump.getInstance().scanStartTime,
+                MedtronicPump.scanAlarmThreshold);
     }
 
     private void startScanForDevice() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (!pump.isScanning) { // If scan is not already started, start scan.
-            pump.isScanning = true;
+        if (!isScanning) { // If scan is not already started, start scan.
+            isScanning = true;
             bleScanner = mBluetoothAdapter.getBluetoothLeScanner();
             if (bleScanner != null) {
                 log.debug("Starting BLE scan");
                 bleScanner.startScan(scanFilter, scanSettings, mLeScanCallback);
-                MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_SCAN)); // Update fragment, with new pump status.
+                MainApp.bus().post(new EventStatusChanged()); // Update fragment, with new pump status.
+                MedtronicPump.getInstance().scanStartTime = System.currentTimeMillis();
             } else {
                 MedtronicPump.getInstance().fatalError = true;
                 mRunConnectThread = false;
                 ConnUtil.hardwareError();
                 log.error("Couldn't get BLE scanner");
             }
+        } else {
+            log.debug("Scan already started.");
         }
     }
 
@@ -183,7 +193,7 @@ public class ConnectThread extends Thread {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             MedtronicPump pump = MedtronicPump.getInstance();
-            if (!pump.isDeviceFound) {
+            if (pump.connectPhase == 1) { // && !pump.isDeviceFound
                 BluetoothDevice device = result.getDevice();
                 if (device != null) {
                     String name = "Unknown device";
@@ -207,10 +217,11 @@ public class ConnectThread extends Thread {
                     }
                     */
                     if (MedtronicPump.deviceName.equals(name)) {
-                        pump.isDeviceFound = true;
+                        pump.connectPhase = 2;
+                        //pump.isDeviceFound = true;
                         log.debug("Device matches pump name");
                         spawnBluetoothWorker(device);
-                        MainApp.bus().post(new EventStatusChanged(MedtronicPump.EVENT_CONNECTING)); // Update fragment, with new pump status.
+                        MainApp.bus().post(new EventStatusChanged()); // Update fragment, with new pump status.
                     }
                 }
                 //super.onScanResult(callbackType, result);
@@ -245,9 +256,8 @@ public class ConnectThread extends Thread {
     }
 
     private void stopScanForDevice() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isScanning) {
-            pump.isScanning = false;
+        if (isScanning) {
+            isScanning = false;
             if (bleScanner != null) {
                 log.debug("Stopping BLE scan");
                 bleScanner.stopScan(mLeScanCallback);

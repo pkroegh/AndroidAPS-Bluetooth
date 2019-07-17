@@ -1388,25 +1388,33 @@
     <string name="med_service_halted">Halted</string>
     <string name="med_service_error">An error occurred</string>
 
-    <string name="med_connection_label">Connection status</string>
-    <string name="med_connection_sleeping_since">Sleeping since</string>
-    <string name="med_connection_sleeping">Sleeping</string>
-    <string name="med_connection_connecting">Connecting…</string>
-    <string name="med_connection_connected">Connected</string>
-    <string name="med_connection_scanning">Scanning for device…</string>
-    <string name="med_connection_failed">Failed to connect to pump!</string>
+    <string name="med_state_label_state">Connection state</string>
+    <string name="med_state_label_error">Error on state</string>
+    <string name="med_state_waiting">Starting scan</string>
+    <string name="med_state_scanning">Scanning for device…</string>
+    <string name="med_state_connecting">Device found, connecting…</string>
+    <string name="med_state_connected">Connected, handshaking…</string>
+    <string name="med_state_communicating">Communicating with device…</string>
+    <string name="med_state_sleeping">Device sleeping since&#160;</string>
 
-    <string name="med_connection_ext_label_sleeping">Time to next wake</string>
-    <string name="med_connection_ext_label_connecting">Bluetooth status</string>
-    <string name="med_connection_ext_connecting">Attempt </string>
-    <string name="med_connection_ext_label_connected">Progress</string>
-    <string name="med_connection_ext_sleep">Setting sleep</string>
-    <string name="med_connection_ext_temp">Setting temp</string>
-    <string name="med_connection_ext_bolus">Setting bolus</string>
-    <string name="med_connection_ext_ping">Sending ping</string>
-    <string name="med_connection_ext_label_scanning">Scan status</string>
-    <string name="med_connection_ext_scan_active">Scan active</string>
-    <string name="med_connection_ext_scan_stopped">Scan stopped</string>
+    <string name="med_progress_label_time">Elapsed time</string>
+    <string name="med_progress_label_attempt">Attempt</string>
+    <string name="med_progress_label_progress">Progress</string>
+    <string name="med_progress_label_sleeping">Time to next wake</string>
+    <string name="med_progress_label_error">Reason</string>
+    <string name="med_progress_waiting">Initializing…</string>
+    <string name="med_progress_time">&#160;seconds</string>
+    <string name="med_progress_command_1">Setting&#160;</string>
+    <string name="med_progress_command_ping">ping</string>
+    <string name="med_progress_command_bolus">bolus</string>
+    <string name="med_progress_command_temp">temp</string>
+    <string name="med_progress_command_sleep">sleep</string>
+    <string name="med_progress_command_2">&#160;attempt&#160;</string>
+
+    <string name="med_error_timeout_scan">Device not in range or not active</string>
+    <string name="med_error_timeout_connect">Device not connecting or BLE not working</string>
+    <string name="med_error_timeout_service">Device not advertising service</string>
+    <string name="med_error_timeout_command">Device not responding to commands</string>
 
     <string name="medtronicESP_battery_label">Remaining battery</string>
     <string name="medtronicESP_lastconnect_label">Last connect</string>

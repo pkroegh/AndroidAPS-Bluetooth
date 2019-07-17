@@ -31,26 +31,22 @@ public class MedtronicPump {
     }
 
     public static void prepareInstanceForNextWake() {
+        int wakeInterval = MedtronicPump.getInstance().wakeInterval;
         boolean fatalError = MedtronicPump.getInstance().fatalError;
         boolean tempStatus = MedtronicPump.getInstance().isTempInProgress;
         long sleepTime = MedtronicPump.getInstance().sleepStartTime;
+        double baseBasal = MedtronicPump.getInstance().baseBasal;
+        double tempBasal = MedtronicPump.getInstance().tempBasal;
+        int tempBasalDuration = MedtronicPump.getInstance().tempBasalDuration;
         instance = null;
+        MedtronicPump.getInstance().wakeInterval = wakeInterval;
         MedtronicPump.getInstance().fatalError = fatalError;
         MedtronicPump.getInstance().isTempInProgress = tempStatus;
         MedtronicPump.getInstance().sleepStartTime = sleepTime;
+        MedtronicPump.getInstance().baseBasal = baseBasal;
+        MedtronicPump.getInstance().tempBasal = tempBasal;
+        MedtronicPump.getInstance().tempBasalDuration = tempBasalDuration;
     }
-
-    // Device status indicators
-    public static final char STATE_STARTING_SCAN = 'W';
-    public static final char STATE_SCANNING = 'S';
-    public static final char STATE_STARTING_SCAN = 'W';
-
-    // Event action indicators
-    public static final char EVENT_FAILED = 'F'; // Failed to connect to device
-    public static final char EVENT_SLEEPING = 'S'; // Device is sleeping
-    public static final char EVENT_CONNECTING = 'C'; // Connecting to device
-    public static final char EVENT_CONNECTED = 'L'; // Linked to device, connected
-    public static final char EVENT_SCAN = 'B'; // Scan status changed
 
     // BLE services and characteristics
     public static final String ESP_UUID_SERVICE = "27652cbb-76f0-45eb-bc37-826ca7315457";
@@ -69,6 +65,7 @@ public class MedtronicPump {
     public static final char ANDROID_TEMP = 'T';
     public static final char ANDROID_WAKE = 'W';
     public static final char ANDROID_SLEEP = 'S';
+    public static final char ANDROID_END = '!';
 
     public static final String NEW_INBOUND_MESSAGE = "NEW_BLUETOOTH_IN"; // TODO: fix
     public static final String NEW_OUTBOUND_MESSAGE = "NEW_BLUETOOTH_OUT"; // TODO: fix
@@ -83,11 +80,11 @@ public class MedtronicPump {
     public static final String deviceName =  "MedESP"; // Device name to scan for with BLE TODO: Remove
 
     // Defined constants
-    public static final int scanAlarmThreshold = 5; // Scan time without finding device before alerting user.
+    public static final int scanAlarmThreshold = 10; // Scan time without finding device before alerting user.
     public static final int connectionAttemptThreshold = 10; // Connection attempts before altering user.
     public static final int commandRetryThreshold = 10; // Number of command retries before alerting user.
     public static final long timeIntervalBetweenCommands = 500; // Time in milliseconds before retrying last command.
-    public static final long bolusAndTempSetDelay = 1000; // Time in milliseconds before retrying last command.
+    public static final long bolusAndTempSetDelay = 300000; // Time in milliseconds before retrying last command.
 
     // Preference defined variables
     public int wakeInterval = 1; // Wake interval
@@ -109,19 +106,18 @@ public class MedtronicPump {
     *   4   | Discovered service, setting commands
      */
 
-
     // Phase 1 - connectPhase = 1 -> Is scanning. connectPhase = 2 -> Device found.
-    public boolean isScanning = false; // True when scanning for devices.
-    public long scanStartTime; // Scan start time.
+    //public boolean isScanning = false; // True when scanning for devices.
+    public long scanStartTime = 0; // Scan start time.
     //public boolean isDeviceFound = false; // True when device with correct deviceName is found.
 
     // Phase 2 - connectPhase = 3 -> Is connecting. connectPhase = 4 -> Connected.
     //public boolean isConnecting = false; // True when waiting for connection to device.
-    public int connectionAttempts; // Attempts at connection to device.
+    public int connectionAttempts = 0; // Attempts at connection to device.
     //public boolean isConnected = false; // True when connection has been established with device.
 
     // Phase 3 - connectPhase = 5 -> Found service and characteristic.
-    public boolean isServiceAndCharacteristicFound = false; // True, when device broadcasts characteristics and service.
+    //public boolean isServiceAndCharacteristicFound = false; // True, when device broadcasts characteristics and service.
 
     // Phase 4 - connectPhase = 6 -> Setting commands.
     public int actionState = 0; // Current action state. Specifies what command to send next.
@@ -134,15 +130,14 @@ public class MedtronicPump {
     public double reservoirRemainingUnits = 50;
 
     // Phase 4.2 - Bolus
-    public double bolusToDeliver; // Bolus amount to deliver.
+    public double bolusToDeliver = 0; // Bolus amount to deliver.
     public boolean newBolusAction = false; // True, when bolus needs to be delivered.
 
     // Phase 4.3 - Temp
     public boolean isTempInProgress = false; // True when temp is in progress.
-    public double baseBasal; // Base basal rate.
-    public double tempBasal; // Temp basal rate to be set.
-    public int tempBasalDuration; // Temp duration to be set.
-    public boolean newTempAction = false; // True, when new temp action.
+    public double baseBasal = 0; // Base basal rate.
+    public double tempBasal = 0; // Temp basal rate to be set.
+    public int tempBasalDuration = 0; // Temp duration to be set.
     public boolean cancelCurrentTemp = false; // True, when the current temp needs to be cancelled.
 
     // Phase 4.4 - Sleep
@@ -156,15 +151,14 @@ public class MedtronicPump {
         return MedtronicPump.getInstance().pumpPassword != null;
     }
 
-    public static void updatePreferences() {
-        updateWakeIntervalFromPref();
+    private static void updatePreferences() {
         updateExtBolusFromPref();
         updateFakeFromPref();
         updatePassFromPref();
         updateNSFromPref();
     }
 
-    private static void updateWakeIntervalFromPref() {
+    public static void updateWakeIntervalFromPref() {
         MedtronicPump pump = MedtronicPump.getInstance();
         int previousValue = pump.wakeInterval;
         int wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
@@ -184,39 +178,32 @@ public class MedtronicPump {
         }
     }
 
-    private static void updateExtBolusFromPref() {
+    public static boolean updateExtBolusFromPref() {
         MedtronicPump pump = MedtronicPump.getInstance();
         boolean previousValue = pump.isUsingExtendedBolus;
         pump.isUsingExtendedBolus = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
-        if (pump.isUsingExtendedBolus != previousValue &&
-                TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress()) {
-            //extendedBolusStop();
-        }
+        return (pump.isUsingExtendedBolus != previousValue &&
+                TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress());
     }
 
-    private static void updateFakeFromPref() {
+    public static boolean updateFakeFromPref() {
         MedtronicPump pump = MedtronicPump.getInstance();
         boolean previousValue = pump.isFakingConnection;
         pump.isFakingConnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
-        if (pump.isFakingConnection != previousValue) {
-            if (!pump.isFakingConnection) {
-                //connectESP();
-            } else {
-                //disconnectESP();
-            }
-        }
+        return (pump.isFakingConnection != previousValue);
     }
 
-    private static void updatePassFromPref() {
+    public static boolean updatePassFromPref() {
         MedtronicPump pump = MedtronicPump.getInstance();
         String new_password = SP.getString(R.string.key_medtronicESP_password, null);
         if (new_password != null && !new_password.equals(pump.pumpPassword)) {
             pump.pumpPassword = new_password;
-            //connectESP();
+            return true;
         }
+        return false;
     }
 
-    private static void updateNSFromPref() {
+    public static void updateNSFromPref() {
         MedtronicPump.getInstance().isUploadingToNS =
                 SP.getBoolean(R.string.key_medtronicESP_uploadNS, false);
     }

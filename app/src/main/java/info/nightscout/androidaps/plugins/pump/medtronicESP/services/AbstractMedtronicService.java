@@ -37,8 +37,6 @@ public abstract class AbstractMedtronicService extends Service {
 
     public abstract boolean getRunThread();
 
-    public abstract char getDeviceStatus();
-
     public abstract void bolus(double bolus);
     public abstract void tempBasal(double absoluteRate, int durationInMinutes);
     public abstract void tempBasalStop();
