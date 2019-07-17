@@ -35,6 +35,7 @@ public class MedtronicService extends AbstractMedtronicService {
         try {
             MainApp.bus().unregister(this);
         } catch (RuntimeException x) {
+            log.error("Unhandled runtime exception: " + x);
         }
         MainApp.bus().register(this);
     }
@@ -42,41 +43,21 @@ public class MedtronicService extends AbstractMedtronicService {
     /* Connect and disconnect pump */
     public void connectESP() {
         if (MedtronicPump.getInstance().isFakingConnection) return;
-        if (!isPasswordSet()) return;
-        resetPumpInstance();
         startThread();
         MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.CONNECTING)); // Update fragment, with new pump status
     }
 
     public void disconnectESP() {
         stopThread();
-        resetPumpInstance();
         MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.DISCONNECTING)); // Update fragment, with new pump status
+        MedtronicPump.resetInstance();
     }
-
-    void killService() {} //TODO add feature
 
     public boolean getRunThread() {
         if (mConnectThread != null) {
             return mConnectThread.getRunConnectThread();
         }
         return false;
-    }
-
-    private boolean isPasswordSet() {
-        updatePreferences();
-        if (MedtronicPump.getInstance().pump_password == null) {
-            return false;
-        }
-        return true;
-    }
-
-    private void resetPumpInstance() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        pump.connectionAttempts = 0;
-        pump.setConnected(false);
-        pump.setConnecting(false);
-        pump.setSleeping(false);
     }
 
     private void startThread() {
@@ -102,13 +83,13 @@ public class MedtronicService extends AbstractMedtronicService {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.isFakingConnection) return;
         pump.bolusToDeliver = bolus;
-        pump.deliverBolus = true;
+        pump.newBolusAction = true;
     }
 
     public void tempBasalStop() {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.isFakingConnection) return;
-        pump.tempAction = 2;
+        pump.cancelCurrentTemp = true;
         pump.newTempAction = true;
     }
 
@@ -117,7 +98,7 @@ public class MedtronicService extends AbstractMedtronicService {
         if (pump.isFakingConnection) return;
         pump.tempBasal = absoluteRate;
         pump.tempBasalDuration = durationInMinutes;
-        pump.tempAction = 1;
+        pump.cancelCurrentTemp = true;
         pump.newTempAction = true;
     }
 
@@ -136,82 +117,7 @@ public class MedtronicService extends AbstractMedtronicService {
     /* Preference management */
     @Subscribe
     public void onStatusEvent(final EventPreferenceChange s) {
-        updatePreferences();
+        MedtronicPump.updatePreferences();
     }
 
-    public void updatePreferences() {
-        //updateDeviceNameFromPref();
-        updateWakeIntervalFromPref();
-        updateExtBolusFromPref();
-        updateFakeFromPref();
-        updatePassFromPref();
-        updateNSFromPref();
-    }
-
-    /*
-    private void updateDeviceNameFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        String mDevName = SP.getString(MainApp.gs(R.string.key_medtronicESP_bt_name), null);
-        if (mDevName != null && !mDevName.equals(pump.mDevName)) {
-            pump.mDevName = mDevName;
-        }
-    }
-    */
-
-    private void updateWakeIntervalFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        int previousValue = pump.wakeInterval;
-        int wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
-        /* //TODO: Gives: "Attempt to invoke virtual method 'android.content.res.Resources android.content.Context.getResources()' on a null object reference" why?
-        int maxInterval = this.getResources().getInteger(R.integer.ESP_max_sleep_interval);
-        int minInterval = this.getResources().getInteger(R.integer.ESP_min_sleep_interval);
-        if (wakeInterval != previousValue) {
-            if (wakeInterval > maxInterval) wakeInterval = maxInterval;
-            if (wakeInterval < minInterval) wakeInterval = minInterval;
-            pump.wakeInterval = wakeInterval;
-        }
-        */
-        if (wakeInterval != previousValue) {
-            if (wakeInterval > 5) wakeInterval = 5;
-            if (wakeInterval < 1) wakeInterval = 1;
-            pump.wakeInterval = wakeInterval;
-        }
-    }
-
-    private void updateExtBolusFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        boolean previousValue = pump.isUsingExtendedBolus;
-        pump.isUsingExtendedBolus = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
-        if (pump.isUsingExtendedBolus != previousValue &&
-                TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress()) {
-            extendedBolusStop();
-        }
-    }
-
-    private void updateFakeFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        boolean previousValue = pump.isFakingConnection;
-        pump.isFakingConnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
-        if (pump.isFakingConnection != previousValue) {
-            if (!pump.isFakingConnection) {
-                connectESP();
-            } else {
-                disconnectESP();
-            }
-        }
-    }
-
-    private void updatePassFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        String new_password = SP.getString(R.string.key_medtronicESP_password, null);
-        if (new_password != null && !new_password.equals(pump.pump_password)) {
-            pump.pump_password = new_password;
-            connectESP();
-        }
-    }
-
-    private void updateNSFromPref() {
-        MedtronicPump.getInstance().isUploadingToNS =
-                SP.getBoolean(R.string.key_medtronicESP_uploadNS, false);
-    }
 }

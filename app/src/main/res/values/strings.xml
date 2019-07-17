@@ -1386,6 +1386,7 @@
     <string name="med_service_running">Running</string>
     <string name="med_service_faking">Faking connection</string>
     <string name="med_service_halted">Halted</string>
+    <string name="med_service_error">An error occurred</string>
 
     <string name="med_connection_label">Connection status</string>
     <string name="med_connection_sleeping_since">Sleeping since</string>
@@ -1414,6 +1415,8 @@
 
     <string name="med_button_label_connect">Start connecting</string>
     <string name="med_button_label_stop">Stop connecting</string>
+    <string name="med_button_label_faking">Stop faking and restart</string>
+    <string name="med_button_label_reset">Reset error and restart</string>
 
     <string name="med_button_label_refresh">Refresh status</string>
 

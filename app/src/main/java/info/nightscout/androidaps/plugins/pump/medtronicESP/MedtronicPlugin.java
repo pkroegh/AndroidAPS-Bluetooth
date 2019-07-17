@@ -41,21 +41,6 @@ import info.nightscout.androidaps.utils.SP;
 public class MedtronicPlugin extends AbstractMedtronicPlugin {
     private static MedtronicPlugin plugin = null;
 
-    /*
-    private static final int REQUEST_FINE_LOCATION = 1;
-
-    private static String[] ACCESS_FINE_LOCATION = {
-            Manifest.permission.ACCESS_FINE_LOCATION
-    };
-
-    private static final int REQUEST_BLUETOOTH = 1;
-
-    private static String[] ACCESS_BLUETOOTH = {
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN
-    };
-    */
-
     public static MedtronicPlugin getPlugin() {
         if (plugin == null)
             plugin = new MedtronicPlugin();
@@ -73,27 +58,6 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
         Intent intent = new Intent(context, MedtronicService.class);
         context.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         MainApp.bus().register(this);
-
-        /*
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(context,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(PluginBase, ACCESS_FINE_LOCATION, REQUEST_FINE_LOCATION);
-        } else {
-            // Permission has already been granted
-        }
-
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(context,
-                Manifest.permission.BLUETOOTH)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(ACCESS_BLUETOOTH, REQUEST_BLUETOOTH);
-        } else {
-            // Permission has already been granted
-        }
-        */
         super.onStart();
     }
 
@@ -114,7 +78,6 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
             log.debug("MedtronicService on connect");
             MedtronicService.LocalBinder mLocalBinder = (MedtronicService.LocalBinder) service;
             sMedtronicService = mLocalBinder.getServiceInstance();
-            sMedtronicService.updatePreferences();
         }
     };
 
@@ -216,10 +179,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
 
     @Override
     public boolean isFakingTempsByExtendedBoluses() {
-        if (sMedtronicService != null) {
-            return sMedtronicService.isUsingExtendedBolus();
-        }
-        return false;
+        return MedtronicPump.getInstance().isFakingConnection;
     }
 
     @Override

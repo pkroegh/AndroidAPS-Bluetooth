@@ -67,7 +67,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public String deviceID() {
-        return MedtronicPump.getInstance().mDevName;
+        return MedtronicPump.deviceName;
     }
 
     @Override
@@ -92,12 +92,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public long lastDataTime() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.connectionAttempts >= MainApp.gi(R.integer.medtronic_connection_attempts_alarm_threshold)) {
-            return pump.lastMessageTime;
-        } else {
-            return System.currentTimeMillis();
-        }
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -217,7 +212,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         try {
             battery.put("percent", pump.batteryRemaining);
             status.put("status", sMedtronicService.getRunThread() ? "suspended" : "normal");
-            status.put("timestamp", DateUtil.toISOString(pump.lastMessageTime));
+            status.put("timestamp", DateUtil.toISOString(System.currentTimeMillis()));
             extended.put("Version", BuildConfig.VERSION_NAME + "-" + BuildConfig.BUILDVERSION);
             TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);
             if (tb != null) {

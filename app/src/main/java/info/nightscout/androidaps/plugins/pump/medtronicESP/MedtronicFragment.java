@@ -112,9 +112,6 @@ public class MedtronicFragment extends SubscriberFragment {
                         synchronized (MedtronicFragment.this) {
                             if (!isBound()) return;
                             switch (action) {
-                                case '0':
-                                    updatePumpStatus();
-                                    break;
                                 case MedtronicPump.EVENT_FAILED:
                                     vConnStatus.setText(MainApp.gs(R.string.med_connection_failed));
                                     break;
@@ -175,21 +172,24 @@ public class MedtronicFragment extends SubscriberFragment {
                             if (medtronic.sMedtronicService == null) {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_null));
                                 return;
-                            } else if (pump.isFakingConnection) {
+                            }
+                            if (pump.fatalError) {
+                                vServiceStatus.setText(MainApp.gs(R.string.med_service_error));
+                                bConnect.setText(MainApp.gs(R.string.med_button_label_reset));
+
+                                return;
+                            }
+                            if (pump.isFakingConnection) {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_faking));
-                                bConnect.setText(MainApp.gs(R.string.med_service_faking));
+                                bConnect.setText(MainApp.gs(R.string.med_button_label_faking));
                             } else if (!medtronic.sMedtronicService.getRunThread()) {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_halted));
                                 bConnect.setText(MainApp.gs(R.string.med_button_label_connect));
                             } else {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_running));
                                 bConnect.setText(MainApp.gs(R.string.med_button_label_stop));
-                                if (pump.connectionAttempts <= MainApp.gi(R.integer.medtronic_connection_attempts_alarm_threshold)) {
-                                    updatePumpStatus();
-                                    batteryView.setText(String.valueOf(pump.batteryRemaining));
-                                } else {
-                                    vConnStatus.setText(MainApp.gs(R.string.med_connection_failed));
-                                }
+                                updatePumpStatus();
+                                batteryView.setText(String.valueOf(pump.batteryRemaining));
                             }
                             basaBasalRateView.setText(String.valueOf(pump.baseBasal));
                             tempBasalView.setText(String.valueOf(pump.tempBasal));
@@ -212,12 +212,25 @@ public class MedtronicFragment extends SubscriberFragment {
 
     private void updatePumpStatus() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.getSleeping()) {
+        if (pump.sleepStartTime != 0) {
+            // Device sleeping
             deviceSleeping();
-        } else if (pump.getConnecting()) {
-            deviceConnecting();
-        } else if (pump.getConnected()) {
+        } else if (!pump.isScanning) {
+            // Starting scan
+        } else if (!pump.isDeviceFound) {
+            // Scanning for device
+
+
+
+        } else if (pump.isConnected) {
             deviceConnected();
+        } else if (pump.isServiceAndCharacteristicFound) {
+
+
+        } else if (pump.isConnecting) {
+            deviceConnecting();
+        } else if (pump.isConnected) {
+
         } else {
             deviceScanning();
         }
@@ -225,16 +238,16 @@ public class MedtronicFragment extends SubscriberFragment {
 
     private double getTimeToNextWake() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        return (((pump.wakeInterval * minToMillisec) - (System.currentTimeMillis() - pump.lastMessageTime)) * 0.001);
+        return (((pump.wakeInterval * minToMillisec) - (System.currentTimeMillis() - pump.sleepStartTime)) * 0.001);
     }
 
     private void deviceSleeping() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.lastMessageTime != 0) {
-            Long agoMsec = System.currentTimeMillis() - pump.lastMessageTime;
+        if (pump.sleepStartTime != 0) {
+            Long agoMsec = System.currentTimeMillis() - pump.sleepStartTime;
             int agoMin = (int) (agoMsec / 60d / 1000d);
             vConnStatus.setText(MainApp.gs(R.string.med_connection_sleeping_since) + "\n" +
-                    DateUtil.timeString(pump.lastMessageTime) +
+                    DateUtil.timeString(pump.sleepStartTime) +
                     " (" + String.format(MainApp.gs(R.string.minago),
                     agoMin) + ")");
         } else {
@@ -254,13 +267,13 @@ public class MedtronicFragment extends SubscriberFragment {
     private void deviceConnected() {
         vConnStatus.setText(MainApp.gs(R.string.med_connection_connected));
         vConnExtStatusLabel.setText(MainApp.gs(R.string.med_connection_ext_label_connected));
-        updatePumpProgress(MedtronicPump.getInstance().mActionState);
+        updatePumpProgress(MedtronicPump.getInstance().actionState);
     }
 
     private void deviceScanning() {
         vConnStatus.setText(MainApp.gs(R.string.med_connection_scanning));
         vConnExtStatusLabel.setText(MainApp.gs(R.string.med_connection_ext_label_scanning));
-        if (MedtronicPump.getInstance().getScanning()) {
+        if (MedtronicPump.getInstance().isScanning) {
             vConnExtStatus.setText(MainApp.gs(R.string.med_connection_ext_scan_active));
         } else {
             vConnExtStatus.setText(MainApp.gs(R.string.med_connection_ext_scan_stopped));
