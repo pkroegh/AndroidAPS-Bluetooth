@@ -45,6 +45,7 @@ public class BluetoothWorkerThread extends Thread {
     private boolean mRunBluetoothThread = true;
 
     private String mPassword;
+    private long bolusOrTempDelayTime = 0;
 
     BluetoothWorkerThread(BluetoothDevice bluetoothDevice) {
         super();
@@ -114,9 +115,13 @@ public class BluetoothWorkerThread extends Thread {
         }
         if (pump.connectPhase == 4) { // pump.isConnected && pump.isServiceAndCharacteristicFound
             if (pump.commandRetries >= MedtronicPump.commandRetryThreshold) {
-                MedtronicPump.getInstance().fatalError = true;
+                // MedtronicPump.getInstance().fatalError = true;
+                // mRunBluetoothThread = false;
+                // ConnUtil.bleError();
+                int connectionAttempts = pump.connectionAttempts;
+                MedtronicPump.resetInstance();
+                pump.connectionAttempts = connectionAttempts;
                 mRunBluetoothThread = false;
-                ConnUtil.bleError();
                 log.error("Device didn't respond to commands.");
             } else {
                 if (pump.actionState != 4) {
@@ -229,9 +234,12 @@ public class BluetoothWorkerThread extends Thread {
         private void deviceDisconnected() {
             MedtronicPump pump = MedtronicPump.getInstance();
             if (pump.actionState != 4) {
-                MedtronicPump.getInstance().fatalError = true;
+                //MedtronicPump.getInstance().fatalError = true;
+                int connectionAttempts = pump.connectionAttempts;
+                MedtronicPump.resetInstance();
+                pump.connectionAttempts = connectionAttempts;
                 mRunBluetoothThread = false;
-                ConnUtil.bleError();
+                //ConnUtil.bleError();
                 log.error("Device did not finish communication before disconnecting.");
             } else {
                 mRunBluetoothThread = false;
@@ -411,7 +419,7 @@ public class BluetoothWorkerThread extends Thread {
         if (!pump.responseRecieved && pump.lastCommandTime != 0) {
             if (pump.actionState == 1 || pump.actionState == 2) {
                 if (!TimeUtil.isTimeDiffLargerMilli(pump.lastCommandTime,
-                        MedtronicPump.bolusAndTempSetDelay)) {
+                        (bolusOrTempDelayTime + MedtronicPump.delayError))) {
                     return;
                 } else {
                     pump.commandRetries = pump.commandRetries + 1;
@@ -455,6 +463,8 @@ public class BluetoothWorkerThread extends Thread {
         MedtronicPump pump = MedtronicPump.getInstance();
         if (pump.newBolusAction) {
             sendMessage(MedtronicPump.ANDROID_BOLUS + "=" + precision.format(pump.bolusToDeliver));
+            bolusOrTempDelayTime = (long)((pump.bolusToDeliver / MedtronicPump.pumpBolusStep) *
+                    (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
         } else {
             pump.actionState = 2;
             pump.responseRecieved = true;
@@ -470,6 +480,9 @@ public class BluetoothWorkerThread extends Thread {
         pump.tempBasalDuration = tb.durationInMinutes;
         sendMessage(MedtronicPump.ANDROID_TEMP + "=" + precision.format(pump.tempBasal) +
                 "&=" + pump.tempBasalDuration);
+        bolusOrTempDelayTime = (long)(((pump.tempBasal / MedtronicPump.pumpBasalStep) +
+                (pump.tempBasalDuration / MedtronicPump.pumpDurationStep)) *
+                (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
     }
 
     private void sendSleep() {
