@@ -84,7 +84,13 @@ public class MedtronicPump {
     public static final int connectionAttemptThreshold = 10; // Connection attempts before altering user.
     public static final int commandRetryThreshold = 10; // Number of command retries before alerting user.
     public static final long timeIntervalBetweenCommands = 500; // Time in milliseconds before retrying last command.
-    public static final long bolusAndTempSetDelay = 300000; // Time in milliseconds before retrying last command.
+
+    public static final double pumpBolusStep = 0.05;
+    public static final double pumpBasalStep = 0.025;
+    public static final int pumpDurationStep = 30;
+    public static final int pumpButtonPressTime = 50; // Press time in milliseconds.
+    public static final int pumpButtonPressDleay = 200; // Time between button press in milliseconds.
+    public static final long delayError = 10000; // Additional time to make sure temp or bolus is set.
 
     // Preference defined variables
     public int wakeInterval = 1; // Wake interval
