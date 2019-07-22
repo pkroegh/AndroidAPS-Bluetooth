@@ -475,14 +475,24 @@ public class BluetoothWorkerThread extends Thread {
         MedtronicPump pump = MedtronicPump.getInstance();
         Profile profile = ProfileFunctions.getInstance().getProfile();
         long now = System.currentTimeMillis();
-        TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);
-        pump.tempBasal = tb.tempBasalConvertedToAbsolute(now, profile);
-        pump.tempBasalDuration = tb.durationInMinutes;
-        sendMessage(MedtronicPump.ANDROID_TEMP + "=" + precision.format(pump.tempBasal) +
-                "&=" + pump.tempBasalDuration);
-        bolusOrTempDelayTime = (long)(((pump.tempBasal / MedtronicPump.pumpBasalStep) +
-                (pump.tempBasalDuration / MedtronicPump.pumpDurationStep)) *
-                (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
+        if (profile != null) {
+            TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);
+            if (tb != null) {
+                try {
+                    pump.tempBasal = tb.tempBasalConvertedToAbsolute(now, profile);
+                    pump.tempBasalDuration = tb.durationInMinutes;
+                } catch (NullPointerException e) {
+                    log.error("Unhandled null pointer exception: ", e);
+                }
+                sendMessage(MedtronicPump.ANDROID_TEMP + "=" + precision.format(pump.tempBasal) +
+                        "&=" + pump.tempBasalDuration);
+                bolusOrTempDelayTime = (long)(((pump.tempBasal / MedtronicPump.pumpBasalStep) +
+                        (pump.tempBasalDuration / MedtronicPump.pumpDurationStep)) *
+                        (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
+            }
+        } else {
+            log.debug("No active profile selected, cannot set temp.");
+        }
     }
 
     private void sendSleep() {
