@@ -91,10 +91,13 @@ public class MedtronicFragment extends SubscriberFragment {
             log.error("Service not running on click");
             return;
         }
+        MedtronicPump pump = MedtronicPump.getInstance();
         if (medtronic.sMedtronicService.getRunThread()) { // Stop connecting to pump
             medtronic.sMedtronicService.disconnectESP();
         } else if (!medtronic.sMedtronicService.getRunThread()) { //Start connecting to pump
             medtronic.sMedtronicService.connectESP();
+        } else if (pump != null && pump.fatalError) {
+            medtronic.sMedtronicService.disconnectESP();
         }
         updateGUI();
     }
