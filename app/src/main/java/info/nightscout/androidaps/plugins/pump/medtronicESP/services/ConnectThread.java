@@ -129,7 +129,7 @@ public class ConnectThread extends Thread {
         if (!isPumpNull(pump) && pump.fatalError) {
             mRunConnectThread = false;
             return;
-        } else {
+        }  else if (isPumpNull(pump)) {
             return;
         }
         if (!isPumpNull(pump) && (pump.sleepStartTime == 0 || isWakeIntervalPassed())) {
