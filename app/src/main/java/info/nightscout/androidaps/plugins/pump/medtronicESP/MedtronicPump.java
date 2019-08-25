@@ -18,7 +18,7 @@ import info.nightscout.androidaps.utils.SP;
 public class MedtronicPump {
     private static MedtronicPump instance = null;
 
-    public static MedtronicPump getInstance() {
+    public static synchronized MedtronicPump getInstance() {
         if (instance == null) {
             instance = new MedtronicPump();
             updatePreferences();
@@ -154,7 +154,7 @@ public class MedtronicPump {
     public double basalStep = 0.1;
 
     public static boolean isPasswordSet() {
-        return MedtronicPump.getInstance().pumpPassword != null;
+        return MedtronicPump.getInstance() != null && MedtronicPump.getInstance().pumpPassword != null;
     }
 
     private static void updatePreferences() {
