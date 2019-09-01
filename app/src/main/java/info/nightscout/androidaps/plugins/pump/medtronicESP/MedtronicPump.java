@@ -1,13 +1,6 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.logging.L;
-import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.SP;
 
@@ -26,11 +19,34 @@ public class MedtronicPump {
         return instance;
     }
 
+    public static void clearInstance() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.fatalError = false;
+        pump.connectPhase = 0;
+        pump.scanStartTime = 0;
+        pump.connectionAttempts = 0;
+        pump.actionState = 0;
+        pump.commandRetries = 0;
+        pump.lastCommandTime = 0;
+        pump.responseRecieved = false;
+        pump.newBolusAction = false;
+        pump.expectingTempUpdate = false;
+        pump.sleepStartTime = 0;
+    }
+
+    /*
     public static void resetInstance() {
+        MedtronicPump pump = MedtronicPump.getInstance();
+        pump.fatalError = false;
+        // Keep connection attempts
+
+
         instance = null;
     }
 
     public static void prepareInstanceForNextWake() {
+        // Keep sleepStartTime
+
         int wakeInterval = MedtronicPump.getInstance().wakeInterval;
         boolean fatalError = MedtronicPump.getInstance().fatalError;
         boolean tempStatus = MedtronicPump.getInstance().isTempInProgress;
@@ -47,6 +63,7 @@ public class MedtronicPump {
         MedtronicPump.getInstance().tempBasal = tempBasal;
         MedtronicPump.getInstance().tempBasalDuration = tempBasalDuration;
     }
+    */
 
     // BLE services and characteristics
     public static final String ESP_UUID_SERVICE = "27652cbb-76f0-45eb-bc37-826ca7315457";
@@ -67,6 +84,7 @@ public class MedtronicPump {
     public static final char ANDROID_SLEEP = 'S';
     public static final char ANDROID_END = '!';
 
+    /*
     public static final String NEW_INBOUND_MESSAGE = "NEW_BLUETOOTH_IN"; // TODO: fix
     public static final String NEW_OUTBOUND_MESSAGE = "NEW_BLUETOOTH_OUT"; // TODO: fix
     public static final String NEW_TREATMENT = "NEW_TREATMENT"; // TODO: fix
@@ -76,6 +94,7 @@ public class MedtronicPump {
 
     public static final String BT_COMM_SEND = "COMMAND_SEND"; // TODO: fix
     public static final String BT_COMM_CONFIRMED = "COMMAND_CONFIRMED"; // TODO: fix
+    */
 
     public static final String deviceName =  "MedESP"; // Device name to scan for with BLE TODO: Remove
 
@@ -91,6 +110,7 @@ public class MedtronicPump {
     public static final int pumpButtonPressTime = 50; // Press time in milliseconds.
     public static final int pumpButtonPressDleay = 200; // Time between button press in milliseconds.
     public static final long delayError = 10000; // Additional time to make sure temp or bolus is set.
+    public static final long tempNullDelay = 20000; // Additional time to make sure temp or bolus is set.
 
     // Preference defined variables
     public int wakeInterval = 1; // Wake interval
@@ -140,11 +160,12 @@ public class MedtronicPump {
     public boolean newBolusAction = false; // True, when bolus needs to be delivered.
 
     // Phase 4.3 - Temp
-    public boolean isTempInProgress = false; // True when temp is in progress.
+    //public boolean isTempInProgress = false; // True when temp is in progress.
+    public boolean expectingTempUpdate = false;
     public double baseBasal = 0; // Base basal rate.
     public double tempBasal = 0; // Temp basal rate to be set.
     public int tempBasalDuration = 0; // Temp duration to be set.
-    public boolean cancelCurrentTemp = false; // True, when the current temp needs to be cancelled.
+    //public boolean cancelCurrentTemp = false; // True, when the current temp needs to be cancelled.
 
     // Phase 4.4 - Sleep
     public long sleepStartTime = 0; // Time when device began sleeping.
@@ -154,7 +175,7 @@ public class MedtronicPump {
     public double basalStep = 0.1;
 
     public static boolean isPasswordSet() {
-        return MedtronicPump.getInstance() != null && MedtronicPump.getInstance().pumpPassword != null;
+        return MedtronicPump.getInstance().pumpPassword != null;
     }
 
     private static void updatePreferences() {
@@ -165,8 +186,7 @@ public class MedtronicPump {
     }
 
     public static void updateWakeIntervalFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        int previousValue = pump.wakeInterval;
+        int previousValue = MedtronicPump.getInstance().wakeInterval;
         int wakeInterval = SP.getInt(R.string.key_medtronicESP_wakeinterval, 1);
         /* //TODO: Gives: "Attempt to invoke virtual method 'android.content.res.Resources android.content.Context.getResources()' on a null object reference" why?
         int maxInterval = this.getResources().getInteger(R.integer.ESP_max_sleep_interval);
@@ -180,30 +200,29 @@ public class MedtronicPump {
         if (wakeInterval != previousValue) {
             if (wakeInterval > 5) wakeInterval = 5;
             if (wakeInterval < 1) wakeInterval = 1;
-            pump.wakeInterval = wakeInterval;
+            MedtronicPump.getInstance().wakeInterval = wakeInterval;
         }
     }
 
     public static boolean updateExtBolusFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        boolean previousValue = pump.isUsingExtendedBolus;
-        pump.isUsingExtendedBolus = SP.getBoolean(R.string.key_medtronicESP_useextended, false);
-        return (pump.isUsingExtendedBolus != previousValue &&
+        boolean previousValue = MedtronicPump.getInstance().isUsingExtendedBolus;
+        MedtronicPump.getInstance().isUsingExtendedBolus =
+                SP.getBoolean(R.string.key_medtronicESP_useextended, false);
+        return (MedtronicPump.getInstance().isUsingExtendedBolus != previousValue &&
                 TreatmentsPlugin.getPlugin().isInHistoryExtendedBoluslInProgress());
     }
 
     public static boolean updateFakeFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        boolean previousValue = pump.isFakingConnection;
-        pump.isFakingConnection = SP.getBoolean(R.string.key_medtronicESP_fake, false);
-        return (pump.isFakingConnection != previousValue);
+        boolean previousValue = MedtronicPump.getInstance().isFakingConnection;
+        MedtronicPump.getInstance().isFakingConnection =
+                SP.getBoolean(R.string.key_medtronicESP_fake, false);
+        return (MedtronicPump.getInstance().isFakingConnection != previousValue);
     }
 
     public static boolean updatePassFromPref() {
-        MedtronicPump pump = MedtronicPump.getInstance();
         String new_password = SP.getString(R.string.key_medtronicESP_password, null);
-        if (new_password != null && !new_password.equals(pump.pumpPassword)) {
-            pump.pumpPassword = new_password;
+        if (new_password != null && !new_password.equals(MedtronicPump.getInstance().pumpPassword)) {
+            MedtronicPump.getInstance().pumpPassword = new_password;
             return true;
         }
         return false;

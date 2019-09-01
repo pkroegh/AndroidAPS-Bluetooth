@@ -6,12 +6,9 @@ import android.os.SystemClock;
 import com.squareup.otto.Subscribe;
 
 import info.nightscout.androidaps.MainApp;
-import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventPumpStatusChanged;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
-import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
-import info.nightscout.androidaps.utils.SP;
 
 /*
  *   Created by ldaug99 on 2019-02-17
@@ -51,7 +48,7 @@ public class MedtronicService extends AbstractMedtronicService {
     public void disconnectESP() {
         stopThread();
         MainApp.bus().post(new EventPumpStatusChanged(EventPumpStatusChanged.DISCONNECTING)); // Update fragment, with new pump status
-        MedtronicPump.resetInstance();
+        MedtronicPump.clearInstance();
     }
 
     public boolean getRunThread() {
@@ -77,28 +74,6 @@ public class MedtronicService extends AbstractMedtronicService {
         if (mConnectThread != null) {
             mConnectThread.setRunConnectThread(false);
         }
-    }
-
-    /* Pump actions */
-    public void bolus(double bolus) {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isFakingConnection) return;
-        pump.bolusToDeliver = bolus;
-        pump.newBolusAction = true;
-    }
-
-    public void tempBasalStop() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isFakingConnection) return;
-        pump.cancelCurrentTemp = true;
-    }
-
-    public void tempBasal(double absoluteRate, int durationInMinutes) {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.isFakingConnection) return;
-        pump.tempBasal = absoluteRate;
-        pump.tempBasalDuration = durationInMinutes;
-        pump.cancelCurrentTemp = false;
     }
 
     public void extendedBolus(double insulin, int durationInHalfHours) {  // TODO implement this

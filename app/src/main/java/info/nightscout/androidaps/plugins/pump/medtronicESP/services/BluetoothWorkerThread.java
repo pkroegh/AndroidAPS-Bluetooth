@@ -11,7 +11,6 @@ import android.bluetooth.BluetoothProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.UUID;
 import java.text.DecimalFormat;
 
@@ -33,7 +32,7 @@ public class BluetoothWorkerThread extends Thread {
     //private static Logger log = LoggerFactory.getLogger(L.PUMPBTCOMM);
     private Logger log = LoggerFactory.getLogger("Medtronic");
 
-    DecimalFormat precision = new DecimalFormat("0.00");
+    private DecimalFormat precision = new DecimalFormat("0.0#");
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mBluetoothDevice;
@@ -72,13 +71,14 @@ public class BluetoothWorkerThread extends Thread {
     }
 
     private void getPumpPassword() {
+        MedtronicPump pump = MedtronicPump.getInstance();
         if (!MedtronicPump.isPasswordSet()) {
-            MedtronicPump.getInstance().fatalError = true;
+            pump.fatalError = true;
             mRunBluetoothThread = false;
             ConnUtil.internalError();
             log.error("Unable to get device password.");
         }
-        mPassword = MedtronicPump.getInstance().pumpPassword;
+        mPassword = pump.pumpPassword;
     }
 
     public boolean isRunning() {
@@ -118,11 +118,11 @@ public class BluetoothWorkerThread extends Thread {
                 // MedtronicPump.getInstance().fatalError = true;
                 // mRunBluetoothThread = false;
                 // ConnUtil.bleError();
-                int connectionAttempts = pump.connectionAttempts;
-                MedtronicPump.resetInstance();
-                pump.connectionAttempts = connectionAttempts;
+                pump.commandRetries = 0;
+                pump.actionState = 0;
+                pump.connectPhase = 0;
                 mRunBluetoothThread = false;
-                log.error("Device didn't respond to commands.");
+                log.error("Device didn't respond to commands, retry attempts: " + pump.connectionAttempts);
             } else {
                 if (pump.actionState != 4) {
                     performNextAction();
@@ -149,11 +149,10 @@ public class BluetoothWorkerThread extends Thread {
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            MedtronicPump pump = MedtronicPump.getInstance();
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                pump.connectPhase = 3;
-                //pump.isConnected = true;
-                //pump.isConnecting = false;
+                MedtronicPump.getInstance().connectPhase = 3;
+                //pump.getInstance().isConnected = true;
+                //pump.getInstance().isConnecting = false;
                 log.debug("Connected to GATT server.");
                 // Attempts to discover services after successful connection.
                 log.debug("Attempting to start service discovery:" +
@@ -161,7 +160,7 @@ public class BluetoothWorkerThread extends Thread {
                 MainApp.bus().post(new EventStatusChanged()); // Update fragment, with new pump status.
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 log.debug("Disconnected from GATT server.");
-                if (pump.connectPhase == 2) { // pump.isConnecting && !pump.isConnected
+                if (MedtronicPump.getInstance().connectPhase == 2) { // pump.isConnecting && !pump.isConnected
                     failedToConnectToBLE();
                 } else {
                     deviceDisconnected();
@@ -220,7 +219,7 @@ public class BluetoothWorkerThread extends Thread {
             MedtronicPump pump = MedtronicPump.getInstance();
             pump.connectionAttempts = pump.connectionAttempts + 1;
             if (pump.connectionAttempts >= MedtronicPump.connectionAttemptThreshold) {
-                MedtronicPump.getInstance().fatalError = true;
+                pump.fatalError = true;
                 mRunBluetoothThread = false;
                 ConnUtil.bleError();
                 log.error("Failed to connect to BLE service " +
@@ -235,19 +234,18 @@ public class BluetoothWorkerThread extends Thread {
             MedtronicPump pump = MedtronicPump.getInstance();
             if (pump.actionState != 4) {
                 //MedtronicPump.getInstance().fatalError = true;
-                int connectionAttempts = pump.connectionAttempts;
-                MedtronicPump.resetInstance();
-                pump.connectionAttempts = connectionAttempts;
                 mRunBluetoothThread = false;
                 //ConnUtil.bleError();
                 log.error("Device did not finish communication before disconnecting.");
             } else {
                 mRunBluetoothThread = false;
                 pump.sleepStartTime = System.currentTimeMillis();
-                MedtronicPump.prepareInstanceForNextWake();
+                pump.connectionAttempts = 0;
                 MainApp.bus().post(new EventStatusChanged()); // Update fragment, with new pump status.
                 log.debug("Device disconnected as expected.");
             }
+            pump.actionState = 0;
+            pump.connectPhase = 0;
         }
 
         private void failedToGetServiceOrCharacteristics() {
@@ -387,6 +385,7 @@ public class BluetoothWorkerThread extends Thread {
         MedtronicPump pump = MedtronicPump.getInstance();
         //TODO: Implement check of delivered bolus
         //TODO: Implement NS upload and command database
+        pump.newBolusAction = false;
         pump.actionState = 2;
         pump.responseRecieved = true;
     }
@@ -406,7 +405,7 @@ public class BluetoothWorkerThread extends Thread {
                 Character.toString(MedtronicPump.ANDROID_WAKE).length()+1,
                 Character.toString(MedtronicPump.ANDROID_WAKE).length()+2));
         log.debug("Device will sleep for " + ESPWakeInterval + " minutes.");
-        // Objects.equals(ESPWakeInterval, pump.wakeInterval);
+        // Objects.equals(ESPWakeInterval, MedtronicPump.getInstance().wakeInterval);
         //TODO: Implement NS upload and command database
         pump.actionState = 4;
         pump.responseRecieved = true;
@@ -461,10 +460,14 @@ public class BluetoothWorkerThread extends Thread {
 
     private void sendBolus() {
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (pump.newBolusAction) {
-            sendMessage(MedtronicPump.ANDROID_BOLUS + "=" + precision.format(pump.bolusToDeliver));
-            bolusOrTempDelayTime = (long)((pump.bolusToDeliver / MedtronicPump.pumpBolusStep) *
-                    (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
+        if (pump.newBolusAction && pump.bolusToDeliver != 0) {
+                log.debug("Delivering bolus: " + pump.bolusToDeliver + " Formatted as: " +
+                        precision.format(pump.bolusToDeliver));
+                sendMessage(MedtronicPump.ANDROID_BOLUS + "=" +
+                        precision.format(pump.bolusToDeliver));
+                bolusOrTempDelayTime = (long)((pump.bolusToDeliver /
+                        MedtronicPump.pumpBolusStep) *
+                        (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
         } else {
             pump.actionState = 2;
             pump.responseRecieved = true;
@@ -477,7 +480,12 @@ public class BluetoothWorkerThread extends Thread {
         long now = System.currentTimeMillis();
         if (profile != null) {
             TemporaryBasal tb = TreatmentsPlugin.getPlugin().getRealTempBasalFromHistory(now);
+            log.debug("Getting temp basal from history. Returned: " + tb);
+            if (pump.expectingTempUpdate) {
+                log.debug("Expecting profile to contain new temp data.");
+            }
             if (tb != null) {
+                log.debug("Setting temp basal in pump.");
                 try {
                     pump.tempBasal = tb.tempBasalConvertedToAbsolute(now, profile);
                     pump.tempBasalDuration = tb.durationInMinutes;
@@ -489,9 +497,17 @@ public class BluetoothWorkerThread extends Thread {
                 bolusOrTempDelayTime = (long)(((pump.tempBasal / MedtronicPump.pumpBasalStep) +
                         (pump.tempBasalDuration / MedtronicPump.pumpDurationStep)) *
                         (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
+                pump.expectingTempUpdate = false;
+            } else {
+                sendMessage(MedtronicPump.ANDROID_TEMP + "=" + precision.format(0) +
+                        "&=" + 0);
+                bolusOrTempDelayTime = MedtronicPump.tempNullDelay;
+                log.debug("Temp history is null, proceeding.");
             }
         } else {
             log.debug("No active profile selected, cannot set temp.");
+            pump.actionState = 3;
+            pump.responseRecieved = true;
         }
     }
 
@@ -499,34 +515,30 @@ public class BluetoothWorkerThread extends Thread {
         sendMessage(MedtronicPump.ANDROID_SLEEP + "=" + MedtronicPump.getInstance().wakeInterval);
     }
 
-    /* NS and database interfaces */
-    /* Upload event to NS */
+    /*
+    // NS and database interfaces
+    // Upload event to NS
     private synchronized void uploadToNS(String uploadType, String command) {
-        /*
         if (uploadCommandsToNS) {
             String note = uploadType + command;
             NSUpload.uploadEvent(CareportalEvent.NOTE, DateUtil.now(), note);
         }
-        */
     }
 
     private synchronized void dbCommandConfirmed(char command) {
-        /*
         MedtronicActionHistory record = MainApp.getDbHelper().
                 getMedtronicActionByCommand(command);
         if (record != null) {
             record.setCommandConfirmed();
         }
         MainApp.getDbHelper().createOrUpdate(record);
-        */
     }
 
     private synchronized void dbCommandSend(String command) {
-                /*
                 MedtronicActionHistory record = new MedtronicActionHistory(command, DateUtil.now(),
                         MedtronicPump.getInstance().isFakingConnection);
                 record.setCommandSend();
                 MainApp.getDbHelper().createOrUpdate(record);
-                */
     }
+    */
 }

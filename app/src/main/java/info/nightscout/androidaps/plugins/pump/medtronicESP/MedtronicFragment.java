@@ -91,12 +91,11 @@ public class MedtronicFragment extends SubscriberFragment {
             log.error("Service not running on click");
             return;
         }
-        MedtronicPump pump = MedtronicPump.getInstance();
-        if (medtronic.sMedtronicService.getRunThread()) { // Stop connecting to pump
+        if (MedtronicPump.getInstance().fatalError) {
             medtronic.sMedtronicService.disconnectESP();
         } else if (!medtronic.sMedtronicService.getRunThread()) { //Start connecting to pump
             medtronic.sMedtronicService.connectESP();
-        } else if (pump != null && pump.fatalError) {
+        } else if (medtronic.sMedtronicService.getRunThread()) { // Stop connecting to pump
             medtronic.sMedtronicService.disconnectESP();
         }
         updateGUI();
@@ -157,11 +156,11 @@ public class MedtronicFragment extends SubscriberFragment {
                             if (!isBound()) return;
                             resetGUI();
                             MedtronicPlugin medtronic = MedtronicPlugin.getPlugin();
-                            MedtronicPump pump = MedtronicPump.getInstance();
                             if (medtronic.sMedtronicService == null) {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_null));
                                 return;
                             }
+                            MedtronicPump pump = MedtronicPump.getInstance();
                             if (pump.fatalError) {
                                 vServiceStatus.setText(MainApp.gs(R.string.med_service_error));
                                 bConnect.setText(MainApp.gs(R.string.med_button_label_reset));
@@ -225,18 +224,22 @@ public class MedtronicFragment extends SubscriberFragment {
     }
 
     private void deviceSleeping() {
-        MedtronicPump pump = MedtronicPump.getInstance();
         //Long agoMsec = System.currentTimeMillis() - pump.sleepStartTime;
         //int agoMin = (int) (agoMsec / 60d / 1000d);
-        vConnStatus.setText(MainApp.gs(R.string.med_state_sleeping) +
-                DateUtil.timeString(pump.sleepStartTime));
+        MedtronicPump pump = MedtronicPump.getInstance();
+        String text = MainApp.gs(R.string.med_state_sleeping) +
+                DateUtil.timeString(pump.sleepStartTime);
+        vConnStatus.setText(text);
         //vConnStatus.setText(MainApp.gs(R.string.med_state_sleeping) + "\n" +
         //                DateUtil.timeString(pump.sleepStartTime) +
         //                " (" + String.format(MainApp.gs(R.string.minago),
         //                agoMin) + ")");
         vConnExtStatusLabel.setText(MainApp.gs(R.string.med_progress_label_sleeping));
-        vConnExtStatus.setText(precision.format(TimeUtil.countdownTimer(pump.sleepStartTime,pump.wakeInterval)) +
-                MainApp.gs(R.string.med_progress_time));
+        text = precision.format(TimeUtil.countdownTimer(
+                pump.sleepStartTime,
+                pump.wakeInterval)) +
+                MainApp.gs(R.string.med_progress_time);
+        vConnExtStatus.setText(text);
     }
 
     private void deviceInitializing() {
@@ -248,8 +251,10 @@ public class MedtronicFragment extends SubscriberFragment {
     private void deviceScanning() {
         vConnStatus.setText(MainApp.gs(R.string.med_state_scanning));
         vConnExtStatusLabel.setText(MainApp.gs(R.string.med_progress_label_time));
-        vConnExtStatus.setText(precision.format(TimeUtil.elapsedTime(MedtronicPump.getInstance().scanStartTime)) +
-                MainApp.gs(R.string.med_progress_time));
+        String text = precision.format(TimeUtil.elapsedTime(
+                MedtronicPump.getInstance().scanStartTime)) +
+                MainApp.gs(R.string.med_progress_time);
+        vConnExtStatus.setText(text);
     }
 
     private void deviceConnecting() {
@@ -271,8 +276,8 @@ public class MedtronicFragment extends SubscriberFragment {
     }
 
     private void updatePumpProgress() {
-        MedtronicPump pump = MedtronicPump.getInstance();
         String status = MainApp.gs(R.string.med_progress_command_1);
+        MedtronicPump pump = MedtronicPump.getInstance();
         switch (pump.actionState) {
             case 0:
                 status += MainApp.gs(R.string.med_progress_command_ping);

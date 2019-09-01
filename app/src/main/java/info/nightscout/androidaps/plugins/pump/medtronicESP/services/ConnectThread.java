@@ -18,8 +18,6 @@ import java.util.UUID;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
-import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.events.EventStatusChanged;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.utils.ConnUtil;
@@ -88,11 +86,11 @@ public class ConnectThread extends Thread {
     };
     */
 
-    public boolean getRunConnectThread() {
+    boolean getRunConnectThread() {
         return mRunConnectThread;
     }
 
-    public void setRunConnectThread(boolean runThread) {
+    void setRunConnectThread(boolean runThread) {
         mRunConnectThread = runThread;
     }
 
@@ -126,26 +124,24 @@ public class ConnectThread extends Thread {
             return;
         }
         MedtronicPump pump = MedtronicPump.getInstance();
-        if (!isPumpNull(pump) && pump.fatalError) {
+        if (pump.fatalError) {
             mRunConnectThread = false;
             return;
-        }  else if (isPumpNull(pump)) {
-            return;
         }
-        if (!isPumpNull(pump) && (pump.sleepStartTime == 0 || isWakeIntervalPassed())) {
+        if (pump.sleepStartTime == 0 || isWakeIntervalPassed()) {
             // It's time to connect to device.
-            if (!isPumpNull(pump) && pump.sleepStartTime != 0) {
+            if (pump.sleepStartTime != 0) {
                 pump.sleepStartTime = 0;
             }
-            if (!isPumpNull(pump) && pump.connectPhase == 0) { // !pump.isScanning && !pump.isConnecting
-                pump.connectPhase = 1;
+            if (pump.connectPhase == 0) { // !pump.isScanning && !pump.isConnecting
+                // Scan has not been started and device has not been found, start scan.
                 MedtronicPump.updateWakeIntervalFromPref();
                 sleepThread(10);
                 wakeInterval = pump.wakeInterval;
-                // Scan has not been started and device has not been found, start scan.
                 startScanForDevice();
+                pump.connectPhase = 1;
             }
-            if (!isPumpNull(pump) && pump.connectPhase == 1 && isScanTimedOut()) {
+            if (pump.connectPhase == 1 && isScanTimedOut()) {
                 // Scan has been running for 5 min, but no device was found. Alarm user.
                 pump.fatalError = true;
                 mRunConnectThread = false;
@@ -160,14 +156,8 @@ public class ConnectThread extends Thread {
         }
     }
 
-    private boolean isPumpNull(MedtronicPump pump) {
-        return pump == null;
-    }
-
-    
     private boolean isWakeIntervalPassed() {
-        MedtronicPump pump = MedtronicPump.getInstance();
-        return TimeUtil.isTimeDiffLargerMin(pump.sleepStartTime,
+        return TimeUtil.isTimeDiffLargerMin(MedtronicPump.getInstance().sleepStartTime,
                 wakeInterval);
     }
 

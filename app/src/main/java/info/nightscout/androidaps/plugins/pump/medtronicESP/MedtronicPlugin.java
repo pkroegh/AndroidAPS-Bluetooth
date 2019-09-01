@@ -1,35 +1,25 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP;
 
-import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.os.IBinder;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 
 import com.squareup.otto.Subscribe;
 
 import info.nightscout.androidaps.MainApp;
-import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TemporaryBasal;
 import info.nightscout.androidaps.events.EventAppExit;
-import info.nightscout.androidaps.events.EventPreferenceChange;
-import info.nightscout.androidaps.interfaces.Constraint;
-import info.nightscout.androidaps.interfaces.PluginType;
-import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.pump.common.defs.PumpType;
-import info.nightscout.androidaps.plugins.pump.danaR.comm.MsgBolusStartWithSpeed;
 import info.nightscout.androidaps.plugins.pump.medtronicESP.services.MedtronicService;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
-import info.nightscout.androidaps.utils.SP;
+import info.nightscout.androidaps.utils.ToastUtils;
 
 /*
  *   Modified version of VirtualPumpPlugin and DanaRPlugin by mike
@@ -47,7 +37,7 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
         return plugin;
     }
 
-    public MedtronicPlugin() {
+    private MedtronicPlugin() {
         super();
         pumpDescription.setPumpDescription(PumpType.Medtronic_ESP);
     }
@@ -89,97 +79,102 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
     }
 
     @Override
-    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) { // TODO fix so that temp is correctly set in pump
-        if (sMedtronicService != null){
+    public PumpEnactResult deliverTreatment(DetailedBolusInfo detailedBolusInfo) {
+        PumpEnactResult result = pumpAction();
+        if (result.success) {
             if (detailedBolusInfo.insulin > 0 || detailedBolusInfo.carbs > 0) {
+                log.debug("New bolus to deliver.");
+                ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(),
+                        "Setting bolus on wake.");
                 Treatment t = new Treatment();
                 t.isSMB = detailedBolusInfo.isSMB;
-                sMedtronicService.bolus(detailedBolusInfo.insulin);
-                PumpEnactResult result = new PumpEnactResult();
-                result.success = Math.abs(detailedBolusInfo.insulin - t.insulin) <
-                        pumpDescription.bolusStep;
-                result.bolusDelivered = t.insulin;
+
+                result.bolusDelivered = detailedBolusInfo.insulin;
                 result.carbsDelivered = detailedBolusInfo.carbs;
-                if (!result.success)
-                    result.comment = String.format(MainApp.gs(R.string.boluserrorcode),
-                            detailedBolusInfo.insulin, t.insulin, 0);
-                else
-                    result.comment = MainApp.gs(R.string.virtualpump_resultok);
+                result.comment = "Delivering " + detailedBolusInfo.insulin + " on next wake.";
+
+                MedtronicPump pump = MedtronicPump.getInstance();
+                pump.bolusToDeliver = result.bolusDelivered;
+                pump.newBolusAction = true;
+
                 detailedBolusInfo.insulin = t.insulin;
                 detailedBolusInfo.date = System.currentTimeMillis();
                 TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo,
                         false);
-                return result;
             } else {
-                PumpEnactResult result = new PumpEnactResult();
                 result.success = false;
                 result.bolusDelivered = 0d;
                 result.carbsDelivered = 0d;
-                result.comment = MainApp.gs(R.string.danar_invalidinput);
+                result.comment = "deliverTreatment: Invalid input";
                 log.error("deliverTreatment: Invalid input");
-                return result;
             }
-        } else {
-            PumpEnactResult result = new PumpEnactResult();
-            result.success = false;
-            result.comment = MainApp.gs(R.string.medtronicESP_result_failed);
-            return result;
         }
+        return result;
     }
 
     @Override
-    public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes, // TODO fix so that temp is correctly set in pump
+    public PumpEnactResult setTempBasalAbsolute(Double absoluteRate, Integer durationInMinutes,
                                                 Profile profile, boolean enforceNew) {
-        if (sMedtronicService != null){
-            MedtronicPump pump = MedtronicPump.getInstance();
-            PumpEnactResult result = new PumpEnactResult();
-            result.success = true;
-            result.absolute = pump.tempBasal;
-            result.duration = pump.tempBasalDuration;
-            result.isPercent = false;
+        PumpEnactResult result = pumpAction();
+        if (result.success) {
+            TemporaryBasal tempBasal = new TemporaryBasal()
+                    .date(System.currentTimeMillis())
+                    .absolute(absoluteRate)
+                    .duration(durationInMinutes)
+                    .source(Source.USER);
+            log.debug("New temp to set.");
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(),
+                    "Setting temp on wake.");
+            result.absolute = absoluteRate;
+            result.duration = durationInMinutes;
             result.isTempCancel = false;
-            if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
-                result.enacted = true;
-                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).
-                        source(Source.USER);
-                TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
-            }
-            sMedtronicService.tempBasal(absoluteRate, durationInMinutes);
-            return result;
-        } else {
-            PumpEnactResult result = new PumpEnactResult();
-            result.success = false;
-            result.comment = MainApp.gs(R.string.medtronicESP_result_failed);
-            return result;
+            result.comment = "Setting temp on next wake. Rate: " + absoluteRate +
+                    " Duration: " + durationInMinutes;
+            result.enacted = true;
+            TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempBasal);
+            MedtronicPump.getInstance().expectingTempUpdate = true;
         }
+        return result;
     }
 
     @Override
-    public PumpEnactResult cancelTempBasal(boolean force) { // TODO fix so that temp is correctly set in pump
-        if (sMedtronicService != null){
-            PumpEnactResult result = new PumpEnactResult();
-            result.success = true;
+    public PumpEnactResult cancelTempBasal(boolean force) {
+        PumpEnactResult result = pumpAction();
+        if (result.success) {
+            log.debug("New temp to cancel.");
+            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(),
+                    "Canceling temp on wake.");
             result.isTempCancel = true;
-            result.comment = MainApp.gs(R.string.virtualpump_resultok);
+            result.comment = "Cancelling temp on next wake.";
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
                 result.enacted = true;
-                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).
-                        source(Source.USER);
+                TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
+                MedtronicPump.getInstance().expectingTempUpdate = true;
             }
-            sMedtronicService.tempBasalStop();
-            return result;
-        } else {
-            PumpEnactResult result = new PumpEnactResult();
-            result.success = false;
-            result.comment = MainApp.gs(R.string.medtronicESP_result_failed);
+        }
+        return result;
+    }
+
+    private PumpEnactResult pumpAction() {
+        PumpEnactResult result = new PumpEnactResult();
+        if (sMedtronicService != null && sMedtronicService.getRunThread()) {
+            result.success = !MedtronicPump.getInstance().fatalError;
+            if (!result.success) {
+                log.debug("pumpAction on fatal pump error. Cannot update pump.");
+                result.comment = "Pump error. Reset pump.";
+            }
             return result;
         }
+        log.error("Service not running on updateTemp");
+        result.comment = "Service not running on updateTemp";
+        result.success = false;
+        return result;
     }
 
     @Override
     public boolean isFakingTempsByExtendedBoluses() {
-        return MedtronicPump.getInstance().isFakingConnection;
+        return MedtronicPump.getInstance().isUsingExtendedBolus;
     }
 
     @Override

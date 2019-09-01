@@ -20,7 +20,6 @@ import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
-import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.actions.defs.CustomAction;
 import info.nightscout.androidaps.plugins.general.actions.defs.CustomActionType;
@@ -198,7 +197,6 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
 
     @Override
     public JSONObject getJSONStatus(Profile profile, String profilename) {
-        MedtronicPump pump = MedtronicPump.getInstance();
         long now = System.currentTimeMillis();
         /*
         if (pump.lastConnection + 5 * 60 * 1000L < now) {
@@ -209,6 +207,7 @@ public abstract class AbstractMedtronicPlugin extends PluginBase implements Pump
         JSONObject battery = new JSONObject();
         JSONObject status = new JSONObject();
         JSONObject extended = new JSONObject();
+        MedtronicPump pump = MedtronicPump.getInstance();
         try {
             battery.put("percent", pump.batteryRemaining);
             status.put("status", sMedtronicService.getRunThread() ? "suspended" : "normal");
