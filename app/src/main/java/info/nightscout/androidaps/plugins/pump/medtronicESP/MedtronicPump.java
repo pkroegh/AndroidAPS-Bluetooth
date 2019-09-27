@@ -165,7 +165,7 @@ public class MedtronicPump {
     public double baseBasal = 0; // Base basal rate.
     public double tempBasal = 0; // Temp basal rate to be set.
     public int tempBasalDuration = 0; // Temp duration to be set.
-    //public boolean cancelCurrentTemp = false; // True, when the current temp needs to be cancelled.
+    public boolean cancelCurrentTemp = false; // True, when the current temp needs to be cancelled.
 
     // Phase 4.4 - Sleep
     public long sleepStartTime = 0; // Time when device began sleeping.

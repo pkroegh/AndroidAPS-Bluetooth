@@ -484,7 +484,7 @@ public class BluetoothWorkerThread extends Thread {
             if (pump.expectingTempUpdate) {
                 log.debug("Expecting profile to contain new temp data.");
             }
-            if (tb != null) {
+            if (tb != null && !pump.cancelCurrentTemp) {
                 log.debug("Setting temp basal in pump.");
                 try {
                     pump.tempBasal = tb.tempBasalConvertedToAbsolute(now, profile);
@@ -503,6 +503,10 @@ public class BluetoothWorkerThread extends Thread {
                         "&=" + 0);
                 bolusOrTempDelayTime = MedtronicPump.tempNullDelay;
                 log.debug("Temp history is null, proceeding.");
+                pump.tempBasal = 0;
+                pump.tempBasalDuration = 0;
+                pump.cancelCurrentTemp = false;
+                pump.expectingTempUpdate = false;
             }
         } else {
             log.debug("No active profile selected, cannot set temp.");

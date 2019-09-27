@@ -146,11 +146,15 @@ public class MedtronicPlugin extends AbstractMedtronicPlugin {
                     "Canceling temp on wake.");
             result.isTempCancel = true;
             result.comment = "Cancelling temp on next wake.";
+            MedtronicPump.getInstance().cancelCurrentTemp = true;
             if (TreatmentsPlugin.getPlugin().isTempBasalInProgress()) {
+                log.debug("Temp active on cancel temp, proceeding.");
                 result.enacted = true;
                 TemporaryBasal tempStop = new TemporaryBasal().date(System.currentTimeMillis()).source(Source.USER);
                 TreatmentsPlugin.getPlugin().addToHistoryTempBasal(tempStop);
                 MedtronicPump.getInstance().expectingTempUpdate = true;
+            } else {
+                log.debug("No temp active on cancel temp.");
             }
         }
         return result;
