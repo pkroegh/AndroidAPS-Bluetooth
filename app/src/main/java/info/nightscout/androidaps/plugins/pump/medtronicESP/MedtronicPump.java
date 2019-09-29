@@ -109,8 +109,8 @@ public class MedtronicPump {
     public static final int pumpDurationStep = 30;
     public static final int pumpButtonPressTime = 50; // Press time in milliseconds.
     public static final int pumpButtonPressDleay = 200; // Time between button press in milliseconds.
-    public static final long delayError = 10000; // Additional time to make sure temp or bolus is set.
-    public static final long tempNullDelay = 20000; // Additional time to make sure temp or bolus is set.
+    public static final long delayError = 15000; // Additional time to make sure temp or bolus is set.
+    public static final long tempNullDelay = 25000; // Additional time to make sure temp or bolus is set.
 
     // Preference defined variables
     public int wakeInterval = 1; // Wake interval
