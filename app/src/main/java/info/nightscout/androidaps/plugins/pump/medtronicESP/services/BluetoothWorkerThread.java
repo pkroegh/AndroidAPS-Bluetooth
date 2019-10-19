@@ -394,6 +394,9 @@ public class BluetoothWorkerThread extends Thread {
         MedtronicPump pump = MedtronicPump.getInstance();
         //TODO: Implement check of set temp
         //TODO: Implement NS upload and command database
+        // -2 = failed to cancle temp
+        // -1 = cancelled temp
+        // Positive float = Value that was set
         pump.actionState = 3;
         pump.responseRecieved = true;
     }
@@ -499,7 +502,7 @@ public class BluetoothWorkerThread extends Thread {
                         (MedtronicPump.pumpButtonPressTime + MedtronicPump.pumpButtonPressDleay));
                 pump.expectingTempUpdate = false;
             } else {
-                sendMessage(MedtronicPump.ANDROID_TEMP + "=" + precision.format(0) +
+                sendMessage(MedtronicPump.ANDROID_TEMP + "=" + "-" + precision.format(1) +
                         "&=" + 0);
                 bolusOrTempDelayTime = MedtronicPump.tempNullDelay;
                 log.debug("Temp history is null, proceeding.");
