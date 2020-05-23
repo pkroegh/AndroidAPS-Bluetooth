@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="@string/medtronicESP_settings">
+
+        <EditTextPreference
+            android:inputType="text"
+            android:key="@string/key_medtronicESP_password"
+            android:title="@string/medtronicESP_password_title"/>
+
+        <EditTextPreference
+            android:inputType="numberSigned"
+            android:key="@string/key_medtronicESP_wakeinterval"
+            android:title="@string/medtronicESP_bwakeinterval_title"/>
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_medtronicESP_fake"
+            android:title="@string/medtronicESP_fake_title" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_medtronicESP_useextended"
+            android:title="@string/medtronicESP_useextended_title" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_medtronicESP_uploadNS"
+            android:title="@string/medtronicESP_uploadNS_title" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -128,11 +128,6 @@
                 android:summary="@string/show_calibration_button_summary"
                 android:title="@string/overview_calibration" />
 
-            <SwitchPreference
-                android:defaultValue="false"
-                android:key="@string/key_show_notes_entry_dialogs"
-                android:title="@string/overview_show_notes_field_in_dialogs_title" />
-
         </PreferenceScreen>
 
         <Preference
@@ -141,7 +136,25 @@
             <intent android:action="info.nightscout.androidaps.plugins.general.overview.activities.QuickWizardListActivity" />
         </Preference>
 
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_show_notes_entry_dialogs"
+            android:title="@string/overview_show_notes_field_in_dialogs_title" />
+
         <PreferenceScreen android:title="@string/advancedsettings_title" android:key="@string/key_advancedsettings">
+
+            <com.andreabaccega.widget.ValidatingEditTextPreference
+                android:defaultValue="100"
+                android:dialogMessage="@string/deliverpartofboluswizard"
+                android:inputType="number"
+                android:key="@string/key_boluswizard_percentage"
+                android:maxLines="1"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/partialboluswizard"
+                validate:maxNumber="100"
+                validate:minNumber="10"
+                validate:testType="numericRange" />
 
             <SwitchPreference
                 android:defaultValue="false"
@@ -152,8 +165,14 @@
             <SwitchPreference
                 android:defaultValue="false"
                 android:key="@string/key_show_statuslights"
-                android:summary="@string/show_statuslights_summary"
                 android:title="@string/show_statuslights" />
+
+            <SwitchPreference
+                android:defaultValue="false"
+                android:dependency="@string/key_show_statuslights"
+                android:key="@string/key_show_statuslights_extended"
+                android:summary="@string/show_statuslights_extended_summary"
+                android:title="@string/show_statuslights_extended" />
 
             <com.andreabaccega.widget.ValidatingEditTextPreference
                 android:defaultValue="80"

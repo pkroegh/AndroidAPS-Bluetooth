@@ -2,11 +2,8 @@ package info.nightscout.androidaps.interfaces;
 
 import android.content.Context;
 
-import com.squareup.otto.Bus;
-
 import junit.framework.Assert;
 
-import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,12 +17,12 @@ import info.AAPSMocker;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.ConstraintChecker;
-import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
-import info.nightscout.androidaps.plugins.constraints.objectives.ObjectivesPlugin;
-import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSMA.OpenAPSMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSSMB.OpenAPSSMBPlugin;
+import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.constraints.objectives.ObjectivesPlugin;
+import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
 import info.nightscout.androidaps.plugins.pump.combo.ComboPlugin;
 import info.nightscout.androidaps.plugins.pump.danaR.DanaRPlugin;
 import info.nightscout.androidaps.plugins.pump.danaR.DanaRPump;
@@ -33,6 +30,8 @@ import info.nightscout.androidaps.plugins.pump.danaRS.DanaRSPlugin;
 import info.nightscout.androidaps.plugins.pump.insight.LocalInsightPlugin;
 import info.nightscout.androidaps.plugins.pump.virtual.VirtualPumpPlugin;
 import info.nightscout.androidaps.plugins.source.SourceGlimpPlugin;
+import info.nightscout.androidaps.plugins.treatments.TreatmentService;
+import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.FabricPrivacy;
 import info.nightscout.androidaps.utils.SP;
 
@@ -42,7 +41,7 @@ import static org.mockito.Mockito.when;
  * Created by mike on 18.03.2018.
  */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({MainApp.class, ConfigBuilderPlugin.class, FabricPrivacy.class, SP.class, Context.class, OpenAPSMAPlugin.class, OpenAPSAMAPlugin.class, OpenAPSSMBPlugin.class})
+@PrepareForTest({MainApp.class, ConfigBuilderPlugin.class, FabricPrivacy.class, SP.class, Context.class, OpenAPSMAPlugin.class, OpenAPSAMAPlugin.class, OpenAPSSMBPlugin.class, TreatmentsPlugin.class, TreatmentService.class})
 public class ConstraintsCheckerTest {
 
     VirtualPumpPlugin pump = new VirtualPumpPlugin();
@@ -58,11 +57,11 @@ public class ConstraintsCheckerTest {
 
     boolean notificationSent = false;
 
-    public ConstraintsCheckerTest() throws JSONException {
+    public ConstraintsCheckerTest() {
     }
 
     @Test
-    public void isLoopInvokationAllowedTest() throws Exception {
+    public void isLoopInvokationAllowedTest() {
         comboPlugin.setPluginEnabled(PluginType.PUMP, true);
         comboPlugin.setValidBasalRateProfileSelectedOnPump(false);
 
@@ -73,9 +72,9 @@ public class ConstraintsCheckerTest {
     }
 
     @Test
-    public void isClosedLoopAllowedTest() throws Exception {
+    public void isClosedLoopAllowedTest() {
         when(SP.getString(R.string.key_aps_mode, "open")).thenReturn("closed");
-        objectivesPlugin.objectives.get(3).setStartedOn(null);
+        objectivesPlugin.getObjectives().get(ObjectivesPlugin.INSTANCE.getMAXIOB_ZERO_CL_OBJECTIVE()).setStartedOn(0);
 
         Constraint<Boolean> c = constraintChecker.isClosedLoopAllowed();
         Assert.assertEquals(true, c.getReasonList().size() == 2); // Safety & Objectives
@@ -90,8 +89,8 @@ public class ConstraintsCheckerTest {
     }
 
     @Test
-    public void isAutosensModeEnabledTest() throws Exception {
-        objectivesPlugin.objectives.get(5).setStartedOn(null);
+    public void isAutosensModeEnabledTest() {
+        objectivesPlugin.getObjectives().get(ObjectivesPlugin.INSTANCE.getAUTOSENS_OBJECTIVE()).setStartedOn(0);
         when(SP.getBoolean(R.string.key_openapsama_useautosens, false)).thenReturn(false);
 
         Constraint<Boolean> c = constraintChecker.isAutosensModeEnabled();
@@ -101,8 +100,8 @@ public class ConstraintsCheckerTest {
     }
 
     @Test
-    public void isAMAModeEnabledTest() throws Exception {
-        objectivesPlugin.objectives.get(6).setStartedOn(null);
+    public void isAMAModeEnabledTest() {
+        objectivesPlugin.getObjectives().get(ObjectivesPlugin.INSTANCE.getAMA_OBJECTIVE()).setStartedOn(0);
 
         Constraint<Boolean> c = constraintChecker.isAMAModeEnabled();
         Assert.assertEquals(true, c.getReasonList().size() == 1); // Objectives
@@ -111,7 +110,7 @@ public class ConstraintsCheckerTest {
     }
 
     @Test
-    public void isAdvancedFilteringEnabledTest() throws Exception {
+    public void isAdvancedFilteringEnabledTest() {
         when(ConfigBuilderPlugin.getPlugin().getActiveBgSource()).thenReturn(SourceGlimpPlugin.getPlugin());
 
         Constraint<Boolean> c = constraintChecker.isAdvancedFilteringEnabled();
@@ -130,7 +129,7 @@ public class ConstraintsCheckerTest {
 
     @Test
     public void isSMBModeEnabledTest() throws Exception {
-        objectivesPlugin.objectives.get(7).setStartedOn(null);
+        objectivesPlugin.getObjectives().get(ObjectivesPlugin.INSTANCE.getSMB_OBJECTIVE()).setStartedOn(0);
         when(SP.getBoolean(R.string.key_use_smb, false)).thenReturn(false);
         when(MainApp.getConstraintChecker().isClosedLoopAllowed()).thenReturn(new Constraint<>(true));
 
@@ -247,7 +246,7 @@ public class ConstraintsCheckerTest {
         // Apply all limits
         Constraint<Double> d = constraintChecker.getMaxIOBAllowed();
         Assert.assertEquals(1.5d, d.value());
-        Assert.assertEquals(d.getReasonList().toString(),2, d.getReasonList().size());
+        Assert.assertEquals(d.getReasonList().toString(), 2, d.getReasonList().size());
         Assert.assertEquals("Safety: Limiting IOB to 1.5 U because of max value in preferences", d.getMostLimitedReasons());
 
     }
@@ -278,10 +277,13 @@ public class ConstraintsCheckerTest {
         AAPSMocker.mockConfigBuilder();
         AAPSMocker.mockConstraintsChecker();
         AAPSMocker.mockApplicationContext();
-        AAPSMocker.mockBus();
         AAPSMocker.mockStrings();
         AAPSMocker.mockSP();
         AAPSMocker.mockCommandQueue();
+        AAPSMocker.mockTreatmentService();
+        AAPSMocker.mockTreatmentPlugin();
+
+        when(mainApp.getPackageName()).thenReturn("info.nightscout.androidaps");
 
         // RS constructor
         when(SP.getString(R.string.key_danars_address, "")).thenReturn("");
@@ -292,7 +294,7 @@ public class ConstraintsCheckerTest {
         constraintChecker = new ConstraintChecker();
 
         safetyPlugin = SafetyPlugin.getPlugin();
-        objectivesPlugin = ObjectivesPlugin.getPlugin();
+        objectivesPlugin = ObjectivesPlugin.INSTANCE;
         comboPlugin = ComboPlugin.getPlugin();
         danaRPlugin = DanaRPlugin.getPlugin();
         danaRSPlugin = DanaRSPlugin.getPlugin();
@@ -309,12 +311,4 @@ public class ConstraintsCheckerTest {
         when(mainApp.getSpecificPluginsListByInterface(ConstraintsInterface.class)).thenReturn(constraintsPluginsList);
 
     }
-
-    class MockedBus extends Bus {
-        @Override
-        public void post(Object event) {
-            notificationSent = true;
-        }
-    }
-
 }

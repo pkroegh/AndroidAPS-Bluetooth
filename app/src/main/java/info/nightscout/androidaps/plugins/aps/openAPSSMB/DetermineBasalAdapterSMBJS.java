@@ -16,10 +16,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+
+import javax.annotation.Nullable;
 
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.MealData;
@@ -68,6 +72,7 @@ public class DetermineBasalAdapterSMBJS {
     }
 
 
+    @Nullable
     public DetermineBasalResultSMB invoke() {
 
 
@@ -215,8 +220,6 @@ public class DetermineBasalAdapterSMBJS {
                         boolean advancedFiltering
     ) throws JSONException {
 
-        String units = profile.getUnits();
-
         mProfile = new JSONObject();
 
         mProfile.put("max_iob", maxIob);
@@ -228,7 +231,7 @@ public class DetermineBasalAdapterSMBJS {
         mProfile.put("max_bg", maxBg);
         mProfile.put("target_bg", targetBg);
         mProfile.put("carb_ratio", profile.getIc());
-        mProfile.put("sens", Profile.toMgdl(profile.getIsf(), units));
+        mProfile.put("sens", profile.getIsfMgdl());
         mProfile.put("max_daily_safety_multiplier", SP.getInt(R.string.key_openapsama_max_daily_safety_multiplier, 3));
         mProfile.put("current_basal_safety_multiplier", SP.getDouble(R.string.key_openapsama_current_basal_safety_multiplier, 4d));
 
@@ -269,7 +272,7 @@ public class DetermineBasalAdapterSMBJS {
         mProfile.put("temptargetSet", tempTargetSet);
         mProfile.put("autosens_max", SafeParse.stringToDouble(SP.getString(R.string.key_openapsama_autosens_max, "1.2")));
 
-        if (units.equals(Constants.MMOL)) {
+        if (ProfileFunctions.getSystemUnits().equals(Constants.MMOL)) {
             mProfile.put("out_units", "mmol/L");
         }
 
@@ -340,7 +343,7 @@ public class DetermineBasalAdapterSMBJS {
 
     private String readFile(String filename) throws IOException {
         byte[] bytes = mScriptReader.readFile(filename);
-        String string = new String(bytes, "UTF-8");
+        String string = new String(bytes, StandardCharsets.UTF_8);
         if (string.startsWith("#!/usr/bin/env node")) {
             string = string.substring(20);
         }

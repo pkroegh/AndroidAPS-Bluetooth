@@ -10,11 +10,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationCompat;
 
-import com.squareup.otto.Subscribe;
+import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,26 +48,30 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.events.EventLoopSetLastRunGui;
 import info.nightscout.androidaps.plugins.aps.loop.events.EventLoopUpdateGui;
 import info.nightscout.androidaps.plugins.aps.loop.events.EventNewOpenLoopNotification;
+import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
-import info.nightscout.androidaps.plugins.constraints.objectives.ObjectivesPlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
+import info.nightscout.androidaps.activities.ErrorHelperActivity;
 import info.nightscout.androidaps.plugins.general.wear.ActionStringHandler;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.pump.virtual.VirtualPumpPlugin;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.androidaps.queue.commands.Command;
+import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.FabricPrivacy;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.T;
-import info.nightscout.androidaps.utils.ToastUtils;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by mike on 05.08.2016.
  */
 public class LoopPlugin extends PluginBase {
     private static Logger log = LoggerFactory.getLogger(L.APS);
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     private static final String CHANNEL_ID = "AndroidAPS-Openloop";
 
@@ -82,9 +87,9 @@ public class LoopPlugin extends PluginBase {
         return loopPlugin;
     }
 
-    private long loopSuspendedTill = 0L; // end of manual loop suspend
-    private boolean isSuperBolus = false;
-    private boolean isDisconnected = false;
+    private long loopSuspendedTill; // end of manual loop suspend
+    private boolean isSuperBolus;
+    private boolean isDisconnected;
 
     public class LastRun {
         public APSResult request = null;
@@ -93,8 +98,11 @@ public class LoopPlugin extends PluginBase {
         public PumpEnactResult smbSetByPump = null;
         public String source = null;
         public Date lastAPSRun = null;
-        public Date lastEnact = null;
-        public Date lastOpenModeAccept;
+        public long lastTBREnact = 0;
+        public long lastSMBEnact = 0;
+        public long lastTBRRequest = 0;
+        public long lastSMBRequest = 0;
+        public long lastOpenModeAccept;
     }
 
     static public LastRun lastRun = null;
@@ -115,9 +123,39 @@ public class LoopPlugin extends PluginBase {
 
     @Override
     protected void onStart() {
-        MainApp.bus().register(this);
         createNotificationChannel();
         super.onStart();
+        disposable.add(RxBus.INSTANCE
+                .toObservable(EventTempTargetChange.class)
+                .observeOn(Schedulers.io())
+                .subscribe(event -> {
+                    invoke("EventTempTargetChange", true);
+                }, FabricPrivacy::logException)
+        );
+        /**
+         * This method is triggered once autosens calculation has completed, so the LoopPlugin
+         * has current data to work with. However, autosens calculation can be triggered by multiple
+         * sources and currently only a new BG should trigger a loop run. Hence we return early if
+         * the event causing the calculation is not EventNewBg.
+         * <p>
+         */
+        disposable.add(RxBus.INSTANCE
+                .toObservable(EventAutosensCalculationFinished.class)
+                .observeOn(Schedulers.io())
+                .subscribe(event -> {
+                    // Autosens calculation not triggered by a new BG
+                    if (!(event.getCause() instanceof EventNewBG)) return;
+
+                    BgReading bgReading = DatabaseHelper.actualBg();
+                    // BG outdated
+                    if (bgReading == null) return;
+                    // already looped with that value
+                    if (bgReading.date <= lastBgTriggeredRun) return;
+
+                    lastBgTriggeredRun = bgReading.date;
+                    invoke("AutosenseCalculation for " + bgReading, true);
+                }, FabricPrivacy::logException)
+        );
     }
 
     private void createNotificationChannel() {
@@ -134,8 +172,8 @@ public class LoopPlugin extends PluginBase {
 
     @Override
     protected void onStop() {
+        disposable.clear();
         super.onStop();
-        MainApp.bus().unregister(this);
     }
 
     @Override
@@ -144,42 +182,9 @@ public class LoopPlugin extends PluginBase {
         return pump == null || pump.getPumpDescription().isTempBasalCapable;
     }
 
-    /**
-     * This method is triggered once autosens calculation has completed, so the LoopPlugin
-     * has current data to work with. However, autosens calculation can be triggered by multiple
-     * sources and currently only a new BG should trigger a loop run. Hence we return early if
-     * the event causing the calculation is not EventNewBg.
-     * <p>
-     */
-    @Subscribe
-    public void onStatusEvent(final EventAutosensCalculationFinished ev) {
-        if (!(ev.cause instanceof EventNewBG)) {
-            // Autosens calculation not triggered by a new BG
-            return;
-        }
-        BgReading bgReading = DatabaseHelper.actualBg();
-        if (bgReading == null) {
-            // BG outdated
-            return;
-        }
-        if (bgReading.date <= lastBgTriggeredRun) {
-            // already looped with that value
-            return;
-        }
-
-        lastBgTriggeredRun = bgReading.date;
-        invoke("AutosenseCalculation for " + bgReading, true);
-    }
-
     public long suspendedTo() {
         return loopSuspendedTill;
     }
-
-    @Subscribe
-    public void onStatusEvent(final EventTempTargetChange ev) {
-        new Thread(() -> invoke("EventTempTargetChange", true)).start();
-    }
-
 
     public void suspendTo(long endTime) {
         loopSuspendedTill = endTime;
@@ -278,7 +283,7 @@ public class LoopPlugin extends PluginBase {
                 String message = MainApp.gs(R.string.loopdisabled) + "\n" + loopEnabled.getReasons();
                 if (L.isEnabled(L.APS))
                     log.debug(message);
-                MainApp.bus().post(new EventLoopSetLastRunGui(message));
+                RxBus.INSTANCE.send(new EventLoopSetLastRunGui(message));
                 return;
             }
             final PumpInterface pump = ConfigBuilderPlugin.getPlugin().getActivePump();
@@ -289,10 +294,10 @@ public class LoopPlugin extends PluginBase {
 
             Profile profile = ProfileFunctions.getInstance().getProfile();
 
-            if (!ProfileFunctions.getInstance().isProfileValid("Loop")) {
+            if (profile == null || !ProfileFunctions.getInstance().isProfileValid("Loop")) {
                 if (L.isEnabled(L.APS))
                     log.debug(MainApp.gs(R.string.noprofileselected));
-                MainApp.bus().post(new EventLoopSetLastRunGui(MainApp.gs(R.string.noprofileselected)));
+                RxBus.INSTANCE.send(new EventLoopSetLastRunGui(MainApp.gs(R.string.noprofileselected)));
                 return;
             }
 
@@ -307,7 +312,7 @@ public class LoopPlugin extends PluginBase {
 
             // Check if we have any result
             if (result == null) {
-                MainApp.bus().post(new EventLoopSetLastRunGui(MainApp.gs(R.string.noapsselected)));
+                RxBus.INSTANCE.send(new EventLoopSetLastRunGui(MainApp.gs(R.string.noapsselected)));
                 return;
             }
 
@@ -343,20 +348,24 @@ public class LoopPlugin extends PluginBase {
             lastRun.source = ((PluginBase) usedAPS).getName();
             lastRun.tbrSetByPump = null;
             lastRun.smbSetByPump = null;
+            lastRun.lastTBREnact = 0;
+            lastRun.lastTBRRequest = 0;
+            lastRun.lastSMBEnact = 0;
+            lastRun.lastSMBRequest = 0;
 
             NSUpload.uploadDeviceStatus();
 
             if (isSuspended()) {
                 if (L.isEnabled(L.APS))
                     log.debug(MainApp.gs(R.string.loopsuspended));
-                MainApp.bus().post(new EventLoopSetLastRunGui(MainApp.gs(R.string.loopsuspended)));
+                RxBus.INSTANCE.send(new EventLoopSetLastRunGui(MainApp.gs(R.string.loopsuspended)));
                 return;
             }
 
             if (pump.isSuspended()) {
                 if (L.isEnabled(L.APS))
                     log.debug(MainApp.gs(R.string.pumpsuspended));
-                MainApp.bus().post(new EventLoopSetLastRunGui(MainApp.gs(R.string.pumpsuspended)));
+                RxBus.INSTANCE.send(new EventLoopSetLastRunGui(MainApp.gs(R.string.pumpsuspended)));
                 return;
             }
 
@@ -372,32 +381,35 @@ public class LoopPlugin extends PluginBase {
                         lastRun.tbrSetByPump = waiting;
                     if (resultAfterConstraints.bolusRequested)
                         lastRun.smbSetByPump = waiting;
-                    MainApp.bus().post(new EventLoopUpdateGui());
+                    RxBus.INSTANCE.send(new EventLoopUpdateGui());
                     FabricPrivacy.getInstance().logCustom("APSRequest");
                     applyTBRRequest(resultAfterConstraints, profile, new Callback() {
                         @Override
                         public void run() {
                             if (result.enacted || result.success) {
                                 lastRun.tbrSetByPump = result;
-                                lastRun.lastEnact = lastRun.lastAPSRun;
+                                lastRun.lastTBRRequest = lastRun.lastAPSRun.getTime();
+                                lastRun.lastTBREnact = DateUtil.now();
+                                RxBus.INSTANCE.send(new EventLoopUpdateGui());
                                 applySMBRequest(resultAfterConstraints, new Callback() {
                                     @Override
                                     public void run() {
                                         //Callback is only called if a bolus was acutally requested
                                         if (result.enacted || result.success) {
                                             lastRun.smbSetByPump = result;
-                                            lastRun.lastEnact = lastRun.lastAPSRun;
+                                            lastRun.lastSMBRequest = lastRun.lastAPSRun.getTime();
+                                            lastRun.lastSMBEnact = DateUtil.now();
                                         } else {
                                             new Thread(() -> {
                                                 SystemClock.sleep(1000);
                                                 LoopPlugin.getPlugin().invoke("tempBasalFallback", allowNotification, true);
                                             }).start();
                                         }
-                                        MainApp.bus().post(new EventLoopUpdateGui());
+                                        RxBus.INSTANCE.send(new EventLoopUpdateGui());
                                     }
                                 });
                             }
-                            MainApp.bus().post(new EventLoopUpdateGui());
+                            RxBus.INSTANCE.send(new EventLoopUpdateGui());
                         }
                     });
                 } else {
@@ -414,7 +426,7 @@ public class LoopPlugin extends PluginBase {
                             .setAutoCancel(true)
                             .setPriority(Notification.PRIORITY_HIGH)
                             .setCategory(Notification.CATEGORY_ALARM)
-                            .setVisibility(Notification.VISIBILITY_PUBLIC);
+                            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
                     if (SP.getBoolean("wearcontrol", false)) {
                         builder.setLocalOnly(true);
                     }
@@ -438,7 +450,7 @@ public class LoopPlugin extends PluginBase {
                             (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
                     // mId allows you to update the notification later on.
                     mNotificationManager.notify(Constants.notificationID, builder.build());
-                    MainApp.bus().post(new EventNewOpenLoopNotification());
+                    RxBus.INSTANCE.send(new EventNewOpenLoopNotification());
 
                     // Send to Wear
                     ActionStringHandler.handleInitiate("changeRequest");
@@ -451,7 +463,7 @@ public class LoopPlugin extends PluginBase {
                 }
             }
 
-            MainApp.bus().post(new EventLoopUpdateGui());
+            RxBus.INSTANCE.send(new EventLoopUpdateGui());
         } finally {
             if (L.isEnabled(L.APS))
                 log.debug("invoke end");
@@ -466,16 +478,13 @@ public class LoopPlugin extends PluginBase {
             public void run() {
                 if (result.enacted) {
                     lastRun.tbrSetByPump = result;
-                    lastRun.lastEnact = new Date();
-                    lastRun.lastOpenModeAccept = new Date();
+                    lastRun.lastTBRRequest = lastRun.lastAPSRun.getTime();
+                    lastRun.lastTBREnact = DateUtil.now();
+                    lastRun.lastOpenModeAccept = DateUtil.now();
                     NSUpload.uploadDeviceStatus();
-                    ObjectivesPlugin objectivesPlugin = MainApp.getSpecificPlugin(ObjectivesPlugin.class);
-                    if (objectivesPlugin != null) {
-                        ObjectivesPlugin.getPlugin().manualEnacts++;
-                        ObjectivesPlugin.getPlugin().saveProgress();
-                    }
+                    SP.incInt(R.string.key_ObjectivesmanualEnacts);
                 }
-                MainApp.bus().post(new EventAcceptOpenLoopChange());
+                RxBus.INSTANCE.send(new EventAcceptOpenLoopChange());
             }
         });
         FabricPrivacy.getInstance().logCustom("AcceptTemp");
@@ -644,25 +653,53 @@ public class LoopPlugin extends PluginBase {
         TreatmentsInterface activeTreatments = TreatmentsPlugin.getPlugin();
 
         LoopPlugin.getPlugin().disconnectTo(System.currentTimeMillis() + durationInMinutes * 60 * 1000L);
-        ConfigBuilderPlugin.getPlugin().getCommandQueue().tempBasalPercent(0, durationInMinutes, true, profile, new Callback() {
-            @Override
-            public void run() {
-                if (!result.success) {
-                    ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.gs(R.string.tempbasaldeliveryerror));
+
+        if (pump.getPumpDescription().tempBasalStyle == PumpDescription.ABSOLUTE) {
+            ConfigBuilderPlugin.getPlugin().getCommandQueue().tempBasalAbsolute(0, durationInMinutes, true, profile, new Callback() {
+                @Override
+                public void run() {
+                    if (!result.success) {
+                        Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                        i.putExtra("soundid", R.raw.boluserror);
+                        i.putExtra("status", result.comment);
+                        i.putExtra("title", MainApp.gs(R.string.tempbasaldeliveryerror));
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        MainApp.instance().startActivity(i);
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            ConfigBuilderPlugin.getPlugin().getCommandQueue().tempBasalPercent(0, durationInMinutes, true, profile, new Callback() {
+                @Override
+                public void run() {
+                    if (!result.success) {
+                        Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                        i.putExtra("soundid", R.raw.boluserror);
+                        i.putExtra("status", result.comment);
+                        i.putExtra("title", MainApp.gs(R.string.tempbasaldeliveryerror));
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        MainApp.instance().startActivity(i);
+                    }
+                }
+            });
+        }
+
         if (pump.getPumpDescription().isExtendedBolusCapable && activeTreatments.isInHistoryExtendedBoluslInProgress()) {
             ConfigBuilderPlugin.getPlugin().getCommandQueue().cancelExtended(new Callback() {
                 @Override
                 public void run() {
                     if (!result.success) {
-                        ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.gs(R.string.extendedbolusdeliveryerror));
+                        Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                        i.putExtra("soundid", R.raw.boluserror);
+                        i.putExtra("status", result.comment);
+                        i.putExtra("title", MainApp.gs(R.string.extendedbolusdeliveryerror));
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        MainApp.instance().startActivity(i);
                     }
                 }
             });
         }
-        NSUpload.uploadOpenAPSOffline(durationInMinutes);
+        createOfflineEvent(durationInMinutes);
     }
 
     public void suspendLoop(int durationInMinutes) {
@@ -671,11 +708,32 @@ public class LoopPlugin extends PluginBase {
             @Override
             public void run() {
                 if (!result.success) {
-                    ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.gs(R.string.tempbasaldeliveryerror));
+                    Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                    i.putExtra("soundid", R.raw.boluserror);
+                    i.putExtra("status", result.comment);
+                    i.putExtra("title", MainApp.gs(R.string.tempbasaldeliveryerror));
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    MainApp.instance().startActivity(i);
                 }
             }
         });
-        NSUpload.uploadOpenAPSOffline(durationInMinutes);
+        createOfflineEvent(durationInMinutes);
     }
 
+    public void createOfflineEvent(int durationInMinutes) {
+        JSONObject data = new JSONObject();
+        try {
+            data.put("eventType", CareportalEvent.OPENAPSOFFLINE);
+            data.put("duration", durationInMinutes);
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        CareportalEvent event = new CareportalEvent();
+        event.date = DateUtil.now();
+        event.source = Source.USER;
+        event.eventType = CareportalEvent.OPENAPSOFFLINE;
+        event.json = data.toString();
+        MainApp.getDbHelper().createOrUpdate(event);
+        NSUpload.uploadOpenAPSOffline(event);
+    }
 }

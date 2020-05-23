@@ -15,13 +15,14 @@ import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
+import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
 
 public class DstHelperPlugin extends PluginBase implements ConstraintsInterface {
     public static final int DISABLE_TIMEFRAME_HOURS = -3;
-    public static final int WARN_PRIOR_TIMEFRAME_HOURS = 24;
+    public static final int WARN_PRIOR_TIMEFRAME_HOURS = 12;
     private static Logger log = LoggerFactory.getLogger(L.CONSTRAINTS);
 
     static DstHelperPlugin plugin = null;
@@ -89,6 +90,6 @@ public class DstHelperPlugin extends PluginBase implements ConstraintsInterface 
 
     private void warnUser(int id, String warningText) {
         Notification notification = new Notification(id, warningText, Notification.LOW);
-        MainApp.bus().post(new EventNewNotification(notification));
+        RxBus.INSTANCE.send(new EventNewNotification(notification));
     }
 }

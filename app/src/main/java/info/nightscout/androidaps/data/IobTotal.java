@@ -1,7 +1,5 @@
 package info.nightscout.androidaps.data;
 
-import com.rits.cloning.Cloner;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -9,10 +7,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
+import info.nightscout.androidaps.plugins.general.overview.graphExtensions.DataPointWithLabelInterface;
+import info.nightscout.androidaps.plugins.general.overview.graphExtensions.PointsWithLabelGraphSeries;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.Round;
 
-public class IobTotal {
+public class IobTotal implements DataPointWithLabelInterface {
     private static Logger log = LoggerFactory.getLogger(IobTotal.class);
 
     public double iob;
@@ -35,8 +35,19 @@ public class IobTotal {
 
 
     public IobTotal copy() {
-        Cloner cloner = new Cloner();
-        return cloner.deepClone(this);
+        IobTotal i = new IobTotal(time);
+        i.iob = iob;
+        i.activity = activity;
+        i.bolussnooze = bolussnooze;
+        i.basaliob = basaliob;
+        i.netbasalinsulin = netbasalinsulin;
+        i.hightempinsulin = hightempinsulin;
+        i.lastBolusTime = lastBolusTime;
+        if (iobWithZeroTemp != null) i.iobWithZeroTemp = iobWithZeroTemp.copy();
+        i.netInsulin = netInsulin;
+        i.netRatio = netRatio;
+        i.extendedBolusInsulin = extendedBolusInsulin;
+        return i;
     }
 
     public IobTotal(long time) {
@@ -133,4 +144,52 @@ public class IobTotal {
         return json;
     }
 
+    // DataPoint interface
+
+    private int color;
+
+    @Override
+    public double getX() {
+        return time;
+    }
+
+    @Override
+    public double getY() {
+        return iob;
+    }
+
+    @Override
+    public void setY(double y) {
+
+    }
+
+    @Override
+    public String getLabel() {
+        return null;
+    }
+
+    @Override
+    public long getDuration() {
+        return 0;
+    }
+
+    @Override
+    public PointsWithLabelGraphSeries.Shape getShape() {
+        return PointsWithLabelGraphSeries.Shape.IOBPREDICTION;
+    }
+
+    @Override
+    public float getSize() {
+        return 0.5f;
+    }
+
+    @Override
+    public int getColor() {
+        return color;
+    }
+
+    public IobTotal setColor(int color) {
+        this.color = color;
+        return this;
+    }
 }

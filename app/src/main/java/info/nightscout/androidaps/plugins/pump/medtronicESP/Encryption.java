@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
+import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicESPPump;
 
 class Encryption {
     /*

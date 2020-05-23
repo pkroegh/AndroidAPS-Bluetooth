@@ -1,16 +1,5 @@
 package info.nightscout.androidaps.plugins.pump.medtronicESP.utils;
 
-import info.nightscout.androidaps.MainApp;
-import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.db.CareportalEvent;
-import info.nightscout.androidaps.db.MedtronicActionHistory;
-import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
-import info.nightscout.androidaps.plugins.pump.medtronicESP.MedtronicPump;
-import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
-import info.nightscout.androidaps.utils.SP;
-
-import static info.nightscout.androidaps.utils.DateUtil.now;
-
 public class TimeUtil {
     private static final long minToMillisec = 60000;
     private static final double millisecToSec = 0.001;
